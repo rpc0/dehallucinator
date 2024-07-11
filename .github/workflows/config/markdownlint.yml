@@ -1,0 +1,8 @@
+# Base Markdownlint configuration
+
+default: true
+MD013:
+  line_length: 100
+  tables: false
+MD033: false
+MD041: false
