@@ -1,0 +1,10 @@
+langchain
+langchainhub
+langchain-google-vertexai
+langchain-google-genai
+python-dotenv
+langchain_community
+langchain_chroma
+unstructured
+jmespath
+ragas==0.0.11
