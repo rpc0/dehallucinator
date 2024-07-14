@@ -21,12 +21,11 @@ class Setup:
             if exe.name == "__init__.py":
                 continue
 
-            final_exe = ("-".join(x.replace("_", "-") for x in exe.parent.parent.parts[1:])
-                         + "-" + exe.stem.replace("_", "-"))
-            module = ".".join(exe.parent.parts[1:]) + "." + exe.stem
-            self.conf["entry_points"]["console_scripts"].append(
-                f"{final_exe} = {module}:main"
+            final_exe = (
+                "-".join(x.replace("_", "-") for x in exe.parent.parent.parts[1:]) + "-" + exe.stem.replace("_", "-")
             )
+            module = ".".join(exe.parent.parts[1:]) + "." + exe.stem
+            self.conf["entry_points"]["console_scripts"].append(f"{final_exe} = {module}:main")
 
     def __str__(self):
         """Return a stringified version of the current configuration."""
