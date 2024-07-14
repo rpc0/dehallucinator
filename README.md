@@ -53,7 +53,7 @@ Finally, install the project in "development mode" (note, you must be in the pro
 for issuing this command):
 
 ```sh
-pip install -e ".[devel]"
+pip install -e ".[dev]"
 ```
 
 The command above works on Windows, macOS and Linux.
