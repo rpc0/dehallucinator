@@ -1,0 +1,16 @@
+requests
+jmespath
+python-dotenv
+
+langchain
+langchainhub
+langchain-google-vertexai
+langchain-google-genai
+langchain_community
+unstructured
+langchain_chroma
+
+datasets
+
+#ragas==0.0.11
+ragas
