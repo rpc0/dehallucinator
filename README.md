@@ -30,9 +30,9 @@ pip install git+ssh://git@github.com/rpc0/dehallucinator.git#egg=dehullicinator
 
 ### For Developers
 
-You need to create a Python virtual environment for this project. 
+You need to create a Python virtual environment for this project.
 We recommend you install and use
-[Miniforge](https://github.com/conda-forge/miniforge). 
+[Miniforge](https://github.com/conda-forge/miniforge).
 Once installed, create the environment:
 
 ```sh
@@ -51,7 +51,7 @@ upgrade your pip installation:
 pip install --upgrade pip
 ```
 
-Finally, install the project in "development mode" 
+Finally, install the project in "development mode"
 (note, you must be in the project's toplevel directory
 for issuing this command):
 
