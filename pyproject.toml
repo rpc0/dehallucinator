@@ -33,7 +33,7 @@ package-dir = {"" = "src"}
 dependencies = {file = ["requirements.txt"]}
 
 [tool.setuptools.dynamic.optional-dependencies]
-devel = {file = ["requirements-dev.txt"]}
+dev = {file = ["requirements-dev.txt"]}
 
 # automatically find packages
 [tool.setuptools.packages.find]
