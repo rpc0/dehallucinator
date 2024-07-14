@@ -2,7 +2,6 @@
 Classes to manage download assessment datasets.
 '''
 
-from abc import ABC, abstractmethod
 import requests
 from urllib.parse import urlparse
 from dataclasses import dataclass
