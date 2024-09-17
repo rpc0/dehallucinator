@@ -10,6 +10,50 @@ x-build-args:
 
 services:
 
+  #https://github.com/valiantlynx/ollama-docker
+  ollama:
+    volumes:
+      - ./ollama/ollama:/root/.ollama
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    image: ollama/ollama:latest
+    ports:
+      - 7869:11434
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    networks:
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama_webui
+    volumes:
+      - ./ollama/ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - 8080:8080
+    environment: # https://docs.openwebui.com/getting-started/env-configuration#default_models
+      - OLLAMA_BASE_URLS=http://host.docker.internal:7869 #comma separated ollama hosts
+      - ENV=dev
+      - WEBUI_AUTH=False
+      - WEBUI_NAME=deh_ollama_web
+      - WEBUI_SECRET_KEY=t0p-s3cr3t
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    networks:
+      - backend
+
   ui:
     restart: always
     build: ui
@@ -18,7 +62,7 @@ services:
     expose:
       - "8080"
     # volumes:
-    #  - "../frontend_ui:/app"
+    #  - "ui:/app"
     networks:
       - frontend
 
@@ -31,13 +75,17 @@ services:
       - "./conf/nginx/nginx.conf:/etc/nginx/nginx.conf"
     networks:
       - frontend
+      - backend
     depends_on:
       - ui
+      - ollama-webui
 
 # Network Definitions
 
 networks:
   frontend:
+    driver: bridge
+  backend:
     driver: bridge
 
 # Storage Volumes
