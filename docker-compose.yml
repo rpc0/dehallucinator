@@ -1,0 +1,58 @@
+version: "3.6"
+
+# Using Docker_BuildKit which requires:
+# export DOCKER_BUILDKIT=1
+# export COMPOSE_DOCKER_CLI_BUILD=1
+
+x-build-args:
+  &build_args
+  INSTALL_PYTHON_VERSION: 3.8
+
+services:
+
+  ui:
+    restart: always
+    build: ui
+    image: deh_ui
+    container_name: deh_ui
+    expose:
+      - "8080"
+    # volumes:
+    #  - "../frontend_ui:/app"
+    networks:
+      - frontend
+
+  nginx:
+    container_name: deh_nginx
+    image: nginx:stable
+    ports:
+      - "80:80"
+    volumes:
+      - "./conf/nginx/nginx.conf:/etc/nginx/nginx.conf"
+    networks:
+      - frontend
+    depends_on:
+      - ui
+
+# Network Definitions
+
+networks:
+  frontend:
+    driver: bridge
+
+# Storage Volumes
+
+volumes:
+  secret-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: $PWD/secrets
+  data-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: $PWD/data
+  db-vol: null
