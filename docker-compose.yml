@@ -66,6 +66,23 @@ services:
     networks:
       - frontend
 
+  api:
+    restart: always
+    build: rag_api
+    image: deh_rag_api
+    container_name: deh_rag_api
+    expose:
+      - "8080"
+    volumes:
+      - secret-vol:/secrets
+    environment:
+      - LLM_MODEL_NAME=llm_model
+    depends_on:
+      - ollama
+    networks:
+      - frontend
+      - backend
+
   nginx:
     container_name: deh_nginx
     image: nginx:stable
@@ -96,11 +113,11 @@ volumes:
     driver_opts:
       type: none
       o: bind
-      device: $PWD/secrets
+      device: ./secrets
   data-vol:
     driver: local
     driver_opts:
       type: none
       o: bind
-      device: $PWD/data
+      device: ./data
   db-vol: null
