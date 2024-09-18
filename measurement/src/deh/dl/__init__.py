@@ -15,7 +15,7 @@ class AssessmentDataDownloader:
         context_count = 1
         for context in self._contexts:
             with open(f"{dir_path}context_{context_count}.context", "w") as f:
-                f.write(context.text)
+                f.write(context)
                 context_count = context_count + 1
 
     def save_question_answers(self, file_path: str):

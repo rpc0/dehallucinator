@@ -39,12 +39,12 @@ class ExperimentSet(QASet):
     answer: str
     contexts: List[str]
 
-    def __init__(self, qaset: QASet, gen_answer: str):
+    def __init__(self, qaset: QASet, gen_answer: str, contexts=[]):
         self.question = qaset.question
         self.ground_truth = qaset.ground_truth
         self.is_impossible = qaset.is_impossible
         self.answer = gen_answer
-        self.contexts = []
+        self.contexts = contexts
 
     def __str__(self) -> str:
         ret = super().__str__()
@@ -71,7 +71,7 @@ class ExperimentSet(QASet):
             {
                 "question": questions,
                 "answer": answers,
-                # "contexts" : contexts,
+                "contexts": contexts,
                 "ground_truth": ground_truths,
             }
         )
