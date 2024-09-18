@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """Public section, including homepage and signup."""
-import deh.settings as settings
-import requests
-from flask import Blueprint, render_template, request
+from flask import Blueprint, render_template
 
 blueprint = Blueprint("public", __name__, static_folder="../static")
 
