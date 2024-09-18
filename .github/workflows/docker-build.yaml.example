@@ -1,4 +1,4 @@
-name: CIRI Front End Build
+name: GHCR Build Example
 
 on:
   push:
