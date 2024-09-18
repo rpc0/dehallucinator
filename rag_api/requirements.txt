@@ -1,0 +1,15 @@
+# debugpy
+langchain-community
+langchain-huggingface
+langchain
+langchainhub
+# gpt4all
+chromadb
+requests
+beautifulsoup4
+unstructured
+fastapi
+uvicorn
+python-multipart
+python-dotenv
+starlette

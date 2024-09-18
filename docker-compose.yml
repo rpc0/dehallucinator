@@ -1,0 +1,126 @@
+version: "3.6"
+
+# Using Docker_BuildKit which requires:
+# export DOCKER_BUILDKIT=1
+# export COMPOSE_DOCKER_CLI_BUILD=1
+
+x-build-args:
+  &build_args
+  INSTALL_PYTHON_VERSION: 3.8
+
+services:
+
+  #https://github.com/valiantlynx/ollama-docker
+  ollama:
+    volumes:
+      - ./ollama/ollama:/root/.ollama
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    image: ollama/ollama:latest
+    ports:
+      - 7869:11434
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+    networks:
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama_webui
+    volumes:
+      - ./ollama/ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - 8080:8080
+    environment: # https://docs.openwebui.com/getting-started/env-configuration#default_models
+      - OLLAMA_BASE_URLS=http://host.docker.internal:7869 #comma separated ollama hosts
+      - ENV=dev
+      - WEBUI_AUTH=False
+      - WEBUI_NAME=deh_ollama_web
+      - WEBUI_SECRET_KEY=t0p-s3cr3t
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    networks:
+      - backend
+
+  ui:
+    restart: always
+    build: ui
+    image: deh_ui
+    container_name: deh_ui
+    environment:
+      - FLASK_ENV=development # Dev setting
+    expose:
+      - "8080"
+    volumes:
+      - "./ui:/app"  # Dev setting
+    networks:
+      - frontend
+
+  api:
+    restart: always
+    build: rag_api
+    image: deh_rag_api
+    container_name: deh_rag_api
+    expose:
+      - "8080"
+    volumes:
+      - secret-vol:/secrets
+      - "./rag_api:/app"  # Dev setting
+    environment:
+      - LLM_MODEL_NAME=llm_model
+    depends_on:
+      - ollama
+    networks:
+      - frontend
+      - backend
+
+  nginx:
+    container_name: deh_nginx
+    image: nginx:stable
+    ports:
+      - "80:80"
+    volumes:
+      - "./conf/nginx/nginx.conf:/etc/nginx/nginx.conf"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - ui
+      - ollama-webui
+
+# Network Definitions
+
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+# Storage Volumes
+
+volumes:
+  secret-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./secrets
+  data-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+  db-vol: null
