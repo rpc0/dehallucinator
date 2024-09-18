@@ -4,16 +4,43 @@
 {% block style %}
 <!-- Add Stylesheet -->
 <style>
-
+textarea {
+    width: 1000px;
+}
 </style>
 {% endblock %}
 {% block content %}
 
-RAG prompt goes here.
+<div>Question:</div>
+<textarea id="question">
+</textarea>
+
+<div>
+    <button id="query" onclick="submitquestion()">Submit</button>
+</div>
+
+<br/><br/>
+
+<div>Answer</div>
+<div id="answer"></div>
 
 {% endblock %}
 {% block js %}
 <script>
-  
+axios.defaults.baseURL = '/api/';
+
+function submitquestion() {
+    question = document.getElementById("question")
+    question_text = question.value
+
+    answer = document.getElementById("answer")
+
+    axios.get('/answer?question=' + encodeURI(question_text))
+        .then(function (response) {
+            var answer_text = response.data;
+            console.log(answer_text);
+            answer.innerHTML = answer_text.response
+        });
+}
 </script>
 {% endblock %}
