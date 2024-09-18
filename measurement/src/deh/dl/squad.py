@@ -29,16 +29,26 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
         url = urlparse(dl_url)
         f_name = os.path.basename(url.path)
 
-        r = requests.get(dl_url)
-        json_data = r.json()
+        json_data = None
 
         if cache_dir:
-            with open(f"{cache_dir}/{f_name}", "w") as f:
-                json.dump(json_data, f)
+            cache_file_path = f"{cache_dir}/{f_name}"
+
+            if os.path.exists(cache_file_path):
+                # Load cached data download:
+                with open(cache_file_path) as json_file:
+                    json_data = json.load(json_file)
+
+            else:
+                r = requests.get(dl_url)
+                json_data = r.json()
+
+                with open(cache_file_path, "w") as f:
+                    json.dump(json_data, f)
 
         # Collect all of the context documents:
         contexts = jmespath.search("data[*].paragraphs[*].context[]", json_data)
-        self._contexts = [Context(context[0]) for context in contexts]
+        self._contexts = contexts
 
         # Collect question-answer pairs:
         filter_str = "?is_impossible!=True" if filter_impossible else "*"

@@ -1,2 +1,3 @@
 ragas
 jmespath
+python-dotenv
