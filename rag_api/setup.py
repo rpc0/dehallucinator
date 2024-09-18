@@ -118,7 +118,7 @@ SETUP = Setup(
         f"Programming Language :: Python :: {sys.version_info.major}.{sys.version_info.minor}",
     ],
     keywords="LLM",
-    python_requires=">=3.9.*",
+    python_requires=">=3.9",
 )
 
 if __name__ == "__main__":

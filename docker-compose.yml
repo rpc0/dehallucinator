@@ -6,7 +6,7 @@ version: "3.6"
 
 x-build-args:
   &build_args
-  INSTALL_PYTHON_VERSION: 3.8
+  INSTALL_PYTHON_VERSION: 3.9
 
 services:
 
@@ -76,7 +76,7 @@ services:
     expose:
       - "8080"
     volumes:
-      - secret-vol:/secrets
+      - data-vol:/data
       - "./rag_api:/app"  # Dev setting
     environment:
       - LLM_MODEL_NAME=llm_model
