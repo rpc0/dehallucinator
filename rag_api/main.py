@@ -39,6 +39,7 @@ async def startup_event():
     """Cache vector store at start-up."""
     try:
         initialize_vectorstore(document_location, "**/*.context")
+
     except Exception as exc:
         print(str(exc))
 
@@ -50,18 +51,23 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
 
     # Initialize model from artifact-store:
     if not vector_store:
-        loader = DirectoryLoader(path=doc_loc, glob=doc_filter)
+        loader = DirectoryLoader(path=doc_loc, glob=doc_filter, silent_errors=True)
         data = loader.load()
         doc_count = len(data)
         logger.debug(f"Loaded {doc_count} documents")
 
         # Split into chunks
-        text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=100)
+        text_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=1500, chunk_overlap=100
+        )
         all_splits = text_splitter.split_documents(data)
         logger.debug(f"Split into {len(all_splits)} chunks")
 
         vector_store = Chroma.from_documents(
-            documents=all_splits, embedding=HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
+            documents=all_splits,
+            embedding=HuggingFaceEmbeddings(
+                model_name="sentence-transformers/all-mpnet-base-v2"
+            ),
         )
 
         return doc_count
@@ -106,5 +112,11 @@ def basic_rag_chain(retriever, question):
         callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
     )
 
-    rag_chain = RunnableParallel(context=retriever | format_docs, question=RunnablePassthrough()) | qa_prompt | llm
+    rag_chain = (
+        RunnableParallel(
+            context=retriever | format_docs, question=RunnablePassthrough()
+        )
+        | qa_prompt
+        | llm
+    )
     return rag_chain.invoke(question)
