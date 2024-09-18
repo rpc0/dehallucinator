@@ -1,7 +1,10 @@
 """Configuration settings for Application API"""
 
+import os
 from dotenv import load_dotenv
 
 load_dotenv()
 
-# VAR = os.environ.get("VAR_NAME", default)
+DATA_FOLDER = os.environ.get("DATA_FOLDER", "data")
+OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:7869")
+LLM_MODEL = os.environ.get("LLM_MODEL", "llava-phi3:latest")
