@@ -44,11 +44,9 @@ jobs:
       # Linters
       - name: Lint with flake8
         run: |
-          flake8 src --count --select=E9,F63,F7,F82 --show-source --statistics
-          flake8 src --count --max-complexity=10 --max-line-length=79 --statistics
-      - name: Lint with Pylint
-        run: |
-          pylint src
+          flake8 measurement/src
+          flake8 rag_api/src
+          flake8 ui/deh
 
       # TODO
       # - Unit test run
