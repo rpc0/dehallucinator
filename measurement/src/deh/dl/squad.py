@@ -6,9 +6,7 @@ import requests
 import argparse
 from urllib.parse import urlparse
 
-from typing import List
-
-from deh.assessment import QASet, Context
+from deh.assessment import QASet
 from deh.dl import AssessmentDataDownloader
 
 
