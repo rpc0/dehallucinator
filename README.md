@@ -83,6 +83,7 @@ The DEH environment can be launched via Docker Compose via the following:
 ```
 
 **Note:** Command run from root directory of the code-base - e.g. the 'dehallucinator' directory that contains the docker-compose.yml file
+**Note:** Cntrl+C can be used to shutdown all running containers in attached mode.  Alternatively `docker-compose down` can be executed.
 
 Upon successful execution of docker-compose command you should see status of component launches and output of container logs:
 
@@ -94,6 +95,12 @@ Connect to a specific Docker container:
 
 ```bash
 > sudo docker exec -it [container_name] bash
+```
+
+View current containers:
+
+```bash
+> sudo docker ps -a
 ```
 
 Stop and start a specific service:
