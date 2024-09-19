@@ -175,3 +175,29 @@ The current SQUAD data-set includes over a thousand contexts and tens of thousan
 * Scope branches for a specific change.  A branch should be short-lived to accomplish a particular goal.  Long-lived branches are often hard to merge into main due to code-drift.
 * Do not merge code to main that fails Code Quality checks or other CI/CD assessments.  Take the time to clean up code formatting, etc. to keep code-base manageable.
 * Add comments, doc-strings and other explanations to help others understand and build off of your code contributions.
+
+### Git Commands for Branching
+
+Git functionality is available natively within VS Code (and other IDEs) so that branch creation, branch selection
+
+A new branch can be created via:
+
+```bash
+> git branch [new_branch_name]
+> git checkout [new_branch_name]
+```
+
+Branches can be pushed to origin (i.e. github) via:
+
+```bash
+> git push -u origin [branch_name]
+```
+
+After branch commits and PR merge to main:
+
+```bash
+> git checkout main
+> git pull
+```
+
+Now you are ready to create a new branch and repeat!
