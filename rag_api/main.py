@@ -10,6 +10,7 @@ from langchain_community.llms import Ollama
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 
+from operator import itemgetter
 
 import logging
 
@@ -57,7 +58,7 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
 
     # Initialize model from artifact-store:
     if not vector_store:
-        loader = DirectoryLoader(path=doc_loc, glob=doc_filter, silent_errors=True)
+        loader = DirectoryLoader(path=doc_loc, glob=doc_filter)
         data = loader.load()
         doc_count = len(data)
         logger.info(f"Loaded {doc_count} documents")
@@ -89,6 +90,7 @@ async def root():
         "application": "DEH Application APIs",
         # Model and Vector Store Params:
         "llm_model": settings.LLM_MODEL,
+        "llm_prompt": settings.LLM_PROMPT,
         "embedding_model": settings.EMBEDDING_MODEL,
         "text_splitter": TXT_SPLITTER,
         "text_chunk_size": settings.TXT_CHUNK_SIZE,
@@ -117,11 +119,20 @@ async def answer(question: str):
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
     retriever = vector_store.as_retriever()
-    response = basic_rag_chain(retriever, question)
+
+    llm = Ollama(
+        base_url=settings.OLLAMA_HOST,
+        model=settings.LLM_MODEL,
+        verbose=True,
+        callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
+    )
+
+    response = basic_rag_chain_with_context(retriever, question, llm)
     return {
         "response": response,
         # Diagnostic values used for measurement logging, etc:
         "llm_model": settings.LLM_MODEL,
+        "llm_prompt": settings.LLM_PROMPT,
         "embedding_model": settings.EMBEDDING_MODEL,
         "text_splitter": TXT_SPLITTER,
         "text_chunk_size": settings.TXT_CHUNK_SIZE,
@@ -129,16 +140,10 @@ async def answer(question: str):
     }
 
 
-def basic_rag_chain(retriever, question):
-    """Simplest RAG Chain (v1) implementation."""
+def basic_rag_chain(retriever, question, llm):
+    """Simplest RAG Chain (v0) implementation."""
 
     qa_prompt = hub.pull("rlm/rag-prompt-llama")
-    llm = Ollama(
-        base_url=settings.OLLAMA_HOST,
-        model=settings.LLM_MODEL,
-        verbose=True,
-        callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
-    )
 
     rag_chain = (
         RunnableParallel(
@@ -147,4 +152,24 @@ def basic_rag_chain(retriever, question):
         | qa_prompt
         | llm
     )
+    return rag_chain.invoke(question)
+
+
+def basic_rag_chain_with_context(retriever, question, llm):
+    """Simplest RAG Chain (v0.1) implementation which includes context pass-through."""
+
+    qa_prompt = hub.pull(settings.LLM_PROMPT)
+
+    #    rag_chain = RunnableParallel(
+    #        context=retriever | format_docs, question=RunnablePassthrough()
+    #    ) | RunnableParallel(qa_prompt | llm, context=itemgetter("context"))
+
+    rag_chain = RunnableParallel(
+        context=retriever | format_docs, question=RunnablePassthrough()
+    ) | RunnableParallel(
+        answer=qa_prompt | llm,
+        question=itemgetter("question"),
+        context=itemgetter("context"),
+    )
+
     return rag_chain.invoke(question)
