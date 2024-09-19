@@ -26,7 +26,7 @@ jobs:
 
       # Check Markdown
       - name: Lint all Markdown files
-        uses: DavidAnson/markdownlint-cli2-action@v14
+        uses: DavidAnson/markdownlint-cli2-action@v17
         with:
           config: .github/workflows/config/.markdownlint.yml
           globs: '**/*.md'
