@@ -33,6 +33,10 @@ logger = logging.getLogger(__name__)
 vector_store = None
 document_location = settings.DATA_FOLDER
 
+# Application Status Parameters:
+TXT_SPLITTER = ""
+DOCS_LOADED = 0
+
 
 @app.on_event("startup")
 async def startup_event():
@@ -48,41 +52,57 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     """Initialize and cache vector store interface."""
 
     global vector_store
+    global TXT_SPLITTER
+    global DOCS_LOADED
 
     # Initialize model from artifact-store:
     if not vector_store:
         loader = DirectoryLoader(path=doc_loc, glob=doc_filter, silent_errors=True)
         data = loader.load()
         doc_count = len(data)
-        logger.debug(f"Loaded {doc_count} documents")
+        logger.info(f"Loaded {doc_count} documents")
 
         # Split into chunks
         text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=1500, chunk_overlap=100
+            chunk_size=settings.TXT_CHUNK_SIZE, chunk_overlap=settings.TXT_CHUNK_OVERLAP
         )
+
+        # Store text splitter class type for logging:
+        TXT_SPLITTER = text_splitter.__class__.__name__
+
         all_splits = text_splitter.split_documents(data)
         logger.debug(f"Split into {len(all_splits)} chunks")
 
         vector_store = Chroma.from_documents(
             documents=all_splits,
-            embedding=HuggingFaceEmbeddings(
-                model_name="sentence-transformers/all-mpnet-base-v2"
-            ),
+            embedding=HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL),
         )
 
+        DOCS_LOADED = doc_count
         return doc_count
 
 
 @app.get("/")
 async def root():
-    """Hello world default end-point for uptime checking."""
-    return {"message": "DEH Application APIs"}
+    """Hello world default end-point for application key parameter visibilty."""
+    return {
+        "application": "DEH Application APIs",
+        # Model and Vector Store Params:
+        "llm_model": settings.LLM_MODEL,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "text_splitter": TXT_SPLITTER,
+        "text_chunk_size": settings.TXT_CHUNK_SIZE,
+        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
+        # Doc Count:
+        "docs_loaded": DOCS_LOADED,
+    }
 
 
 @app.get("/doc/load")
 async def load_model(doc_path: str, doc_filter: str):
     """Re-initializes vector store with new document corpus."""
 
+    # TODO: Need to further implement/check (future feature)
     global vector_store
     vector_store = None
 
@@ -98,7 +118,15 @@ async def answer(question: str):
 
     retriever = vector_store.as_retriever()
     response = basic_rag_chain(retriever, question)
-    return {"response": response}
+    return {
+        "response": response,
+        # Diagnostic values used for measurement logging, etc:
+        "llm_model": settings.LLM_MODEL,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "text_splitter": TXT_SPLITTER,
+        "text_chunk_size": settings.TXT_CHUNK_SIZE,
+        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
+    }
 
 
 def basic_rag_chain(retriever, question):
