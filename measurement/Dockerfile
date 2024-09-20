@@ -6,9 +6,11 @@ COPY . /app
 # Update PIP
 RUN python -m pip install --upgrade pip
 
-# Install library and requirements
+# Install requirements via cache
 RUN --mount=type=cache,target=/root/.cache \
-    pip install .
+    pip install -r requirements.txt
+
+RUN pip install .
 
 ENTRYPOINT ["python"]
 

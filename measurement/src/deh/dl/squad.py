@@ -41,14 +41,14 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
                 r = requests.get(dl_url)
                 json_data = r.json()
 
-                if not os.path.exists(cache_file_path):
+                if not os.path.exists(cache_dir):
                     print(
                         f"Warning: Path {cache_file_path} does not exist and will be created."
                     )
 
-                Path(cache_file_path).mkdir(parents=True, exist_ok=True)
+                Path(cache_dir).mkdir(parents=True, exist_ok=True)
 
-                with open(cache_file_path, "w") as f:
+                with open(cache_file_path, "w+") as f:
                     json.dump(json_data, f)
 
         # Collect all of the context documents:
