@@ -132,7 +132,45 @@ View docker container resource utilization:
 
 The `data` folder is used to store specific document corpus files and is a local folder that is mounted to the `rag-api` docker container.  You can place whatever files you want in this container for RAG context processing (the folder is processed at the startup of the `rag-api` service).
 
-The following steps will enable the developer to download the [SQuADv2.0](https://rajpurkar.github.io/SQuAD-explorer/) data-set in a standard format.
+For RAG execution only a Corpus is required.  For RAG performance measurement both a Corpus and a set of Question/Answer pairs is required.  Specifics on performance measurement and associated requirements can be found [here](https://docs.ragas.io/en/stable/concepts/metrics/index.html).
+
+### Downloading the SQuADv2.0 QA Document Corpus
+
+The following steps will enable the developer to download the [SQuADv2.0](https://rajpurkar.github.io/SQuAD-explorer/) data-set in a standard format.  SQuADAv2.0 provides both a corpus and paired Question-Answers that can be used for RAG performance measurement.  It will be the default measurement approach for RAG model assessment.
+
+#### via Docker Container
+
+A Docker container has been provided for convenience to enable SQuAD data download.  It can be executed via the following steps.
+
+Build `deh_measure` image from Dockerfile:
+
+```bash
+> docker build -t deh_measurement:latest ./measurement
+```
+
+**Note:** Command should be executed from project root directory (e.g. dehallucinator).  Image build is only required to do one-time.
+
+Execute download utility:
+
+```bash
+> ./measurement/utils/download_squad_data.sh
+```
+
+**Note:** Command should be executed from project root directory (e.g. dehallucinator).
+
+Result of utility should be creation of 3 folders in `data`:
+
+![data-folder](./docs/images/data-folder.png)
+
+* contexts - the document corpus of "raw information" that is used by the RAG chain.
+* qa_dl_cache - a cache of the SQUAD QA dataset to prevent need to redownload in future processing.
+* qas - a TSV file of questions and correct "ground truth" answer
+
+The current SQUAD data-set includes over a thousand contexts and tens of thousands of question/answers so you may want to delete/limit for testing purposes.
+
+#### In Local Development Environment
+
+Alternatively you can execute Python utility within local development environment.
 
 Change directory to measure folder:
 
@@ -156,18 +194,8 @@ Install deh_measure packages:
 Run SQUAD download utility (command line arguments can be included if desired but default to project compatible values):
 
 ```bash
-> python src/dl/squad.py
+> python squad_da_dl.py
 ```
-
-Result of utility should be create of 3 folders in `data`:
-
-![data-folder](./docs/images/data-folder.png)
-
-* contexts - the document corpus of "raw information" that is used by the RAG chain.
-* qa_dl_cache - a cache of the SQUAD QA dataset to prevent need to redownload in future processing.
-* qas - a TSV file of questions and correct "ground truth" answer
-
-The current SQUAD data-set includes over a thousand contexts and tens of thousands of question/answers so you may want to delete/limit for testing purposes.
 
 ## Developer Best Practices
 
