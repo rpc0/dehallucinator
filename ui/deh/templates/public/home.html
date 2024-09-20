@@ -5,41 +5,82 @@
 <!-- Add Stylesheet -->
 <style>
 textarea {
-    width: 1000px;
+    width:100%
 }
+
+.card-section {
+    background-color: lightblue;
+    width:100%;
+    padding: 5px;
+    margin-bottom: 10px;
+}
+.card-title {
+    font-weight: bold;
+}
+
 </style>
 {% endblock %}
 {% block content %}
 
-<div>Question:</div>
-<textarea id="question">
-</textarea>
-
-<div>
-    <button id="query" onclick="submitquestion()">Submit</button>
+<div class="card-section">
+    <div class="card-title">Question:</div>
+        <textarea id="question">
+    </textarea>
+    <div>
+        <button id="query" onclick="submitquestion()">Submit</button>
+    </div>
 </div>
 
-<br/><br/>
+<div class="card-section">
+    <div class="card-title">Answer:</div>
+    <div id="answer"></div>
+</div>
 
-<div>Answer</div>
-<div id="answer"></div>
+<div class="card-section">
+    <div class="card-title">Contexts:</div>
+    <div id="context"></div>
+</div>
+
+<div class="card-section">
+    <div class="card-title">Configuration Details:</div>
+    <div id="config"></div>
+</div>
+
+
 
 {% endblock %}
 {% block js %}
 <script>
+// Set the API endpoint location:
 axios.defaults.baseURL = '/api/';
+
+// Initialize Backend-config details:
+get_backend_config()
+
+function get_backend_config() {
+    config = document.getElementById("config")
+
+    axios.get('/')
+        .then(function (response) {
+            var config_details = response.data;
+            console.log(config_details);
+            config.innerHTML = "<pre>" + JSON.stringify(config_details, null, 2) + "</pre>"
+        });
+}
 
 function submitquestion() {
     question = document.getElementById("question")
     question_text = question.value
 
     answer = document.getElementById("answer")
+    context = document.getElementById("context")
 
     axios.get('/answer?question=' + encodeURI(question_text))
         .then(function (response) {
             var answer_text = response.data;
             console.log(answer_text);
-            answer.innerHTML = answer_text.response
+            answer.innerHTML = answer_text.response.answer
+            context.innerHTML = answer_text.response.context.replaceAll('------------', "<br/><br/>")
         });
 }
 </script>
