@@ -65,9 +65,13 @@ class Setup:
             if exe.endswith("/__init__.py"):
                 continue
             exe = Path(exe)
-            final_exe = "-".join(exe.parent.parent.parts[1:]) + "-" + exe.stem.replace("_", "-")
+            final_exe = (
+                "-".join(exe.parent.parent.parts[1:]) + "-" + exe.stem.replace("_", "-")
+            )
             module = ".".join(exe.parent.parts[1:]) + "." + exe.stem
-            self.conf["entry_points"]["console_scripts"].append(f"{final_exe} = {module}:main")
+            self.conf["entry_points"]["console_scripts"].append(
+                f"{final_exe} = {module}:main"
+            )
 
         # Everything under src should be looked for
         self.conf["package_dir"] = {"": "src"}
@@ -107,7 +111,7 @@ class Setup:
 
 SETUP = Setup(
     name="deh-measurement",
-    version="0.0.1",
+    version="0.0.3",
     description="deh Measurement",
     url="www.deh.com",
     author="deh",
