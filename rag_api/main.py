@@ -1,6 +1,7 @@
 from fastapi import FastAPI
 from starlette.middleware.cors import CORSMiddleware
 from langchain_community.document_loaders import DirectoryLoader
+from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -58,7 +59,15 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
 
     # Initialize model from artifact-store:
     if not vector_store:
-        loader = DirectoryLoader(path=doc_loc, glob=doc_filter)
+        text_loader_kwargs = {"autodetect_encoding": True}
+
+        loader = DirectoryLoader(
+            path=doc_loc,
+            glob=doc_filter,
+            loader_cls=TextLoader,
+            loader_kwargs=text_loader_kwargs,
+            silent_errors=True,
+        )
         data = loader.load()
         doc_count = len(data)
         logger.info(f"Loaded {doc_count} documents")
