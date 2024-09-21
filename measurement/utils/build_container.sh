@@ -1,0 +1,1 @@
+docker build -t deh_measurement:latest measurement/

@@ -14,19 +14,17 @@ import argparse
 import time
 from pathlib import Path
 
-API_ANSWER_ENDPOINT = "localhost/api/"
-
 
 def create_api_answer_url(question: str):
     """Returns a formatted url for API query."""
     # URL encode the question:
     question = urllib.parse.quote(question)
-    return f"http://{API_ANSWER_ENDPOINT}/answer?question={question}"
+    return f"http://{settings.API_ANSWER_ENDPOINT}/answer?question={question}"
 
 
 def create_api_config_url():
     """Returns url for API configuration info."""
-    return f"http://{API_ANSWER_ENDPOINT}/"
+    return f"http://{settings.API_ANSWER_ENDPOINT}/"
 
 
 def get_config_params():
@@ -53,6 +51,9 @@ if __name__ == "__main__":
     # Console print output:
     print("RAGAS QA Evaluation")
     print(f"qas_flie: {args.qas_file}")
+    print(f"storing evaluation results to: {args.evaluation_folder}")
+    print(f"sample_size: {args.sample_size}")
+    print(f"RAG API endponig: {settings.API_ANSWER_ENDPOINT}")
 
     # Get API Endpoint Configuration:
     response = get_config_params()
