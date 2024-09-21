@@ -142,7 +142,7 @@ The following steps will enable the developer to download the [SQuADv2.0](https:
 
 A Docker container has been provided for convenience to enable SQuAD data download.  It can be executed via the following steps.
 
-Build `deh_measure` image from Dockerfile:
+Build `deh_measurement` image from Dockerfile:
 
 ```bash
 > docker build -t deh_measurement:latest ./measurement
@@ -196,6 +196,52 @@ Run SQUAD download utility (command line arguments can be included if desired bu
 ```bash
 > python squad_da_dl.py
 ```
+
+## Evaluating RAG Performance
+
+Similar to QA dataset download, evaluation of RAG performance can be done via a containerized utility.
+
+Build `deh_measurement` image from Dockerfile:
+
+```bash
+> ./measurement/utils/build_container.sh
+```
+
+**Note:** Command should be executed from project root directory (e.g. dehallucinator).  Image build is only required to do one-time.
+
+Execute evaluation utility:
+
+```bash
+> ./measurement/utils/evaluate_rag.sh
+```
+
+**Note:** Command should be executed from project root directory (e.g. dehallucinator).
+
+Result of utility should be creation of `evaluation` folder in `data` with a time-stamp named file:
+
+![evaluation folder](/docs/images/evaluation-folder.png)
+
+An evaluation file should have a CSV structure simliar to the below.
+
+*QA elements:*
+
+* question - the question being asked
+* contexts - the array of retrieved contexts via the RAG pipeline
+* answer - the LLM generated answer
+* ground_truth - the human generated correct answer
+
+*Evaluation metrics:*
+
+* answer_similiarity - the cosine similarity of answer and ground truth embeddings
+
+*RAG and Assessment Hyper-Parameter elements:*
+
+* llm_model - LLM model used in RAG API response generation
+* llm_prompt - LLM prompt used in RAG API response generation
+* embedding_model - the embedding model used in Vector Store embedding creation
+* docs_loaded - number of context docs loaded into Vector Store
+* assessment_llm - LLM model used in assessment for LLM-as-judge measurement
+* assessment_embedding - Embedding model used in assessment for embedding comparison
 
 ## Developer Best Practices
 
