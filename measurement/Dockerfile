@@ -13,6 +13,6 @@ RUN --mount=type=cache,target=/root/.cache \
 RUN pip install .
 
 ENTRYPOINT ["python"]
-
+#ENTRYPOINT ["sh", "./measurement/utils/download_squad_data.sh"]
 # Specific Utility to Run
-CMD []
+#CMD [""]
