@@ -22,7 +22,7 @@ class AssessmentDataDownloader:
 
         context_count = 1
         for context in self._contexts:
-            with open(f"{dir_path}/context_{context_count}.context", "w") as f:
+            with open(f"{dir_path}/context_{context_count}.context", "w", encoding='utf-8') as f:
                 f.write(context)
                 context_count = context_count + 1
 
@@ -38,6 +38,6 @@ class AssessmentDataDownloader:
 
         Path(p.parent).mkdir(parents=True, exist_ok=True)
 
-        with open(f"{file_path}", "w") as f:
+        with open(f"{file_path}", "w", encoding='utf-8') as f:
             for qas in self._qaset:
                 f.write(f"{qas.question}\t{qas.ground_truth}\n")
