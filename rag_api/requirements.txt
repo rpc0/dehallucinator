@@ -13,3 +13,4 @@ uvicorn
 python-multipart
 python-dotenv
 starlette
+pydantic
