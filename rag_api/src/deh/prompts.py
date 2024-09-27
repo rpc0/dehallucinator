@@ -5,7 +5,9 @@ from enum import Enum
 
 qa_eval_prompt_with_context_text = """
 You are a teacher evaluating a test. 
-You are provided with a question along with an answer for the question written by a student. Evaluate the question-answer pair using the provided context and provide feedback. Only mark the answer as correct if it agress with the provided context
+You are provided with a question along with an answer for the question written by a student. 
+Evaluate the question-answer pair using the provided context and provide feedback. 
+Only mark the answer as correct if it agress with the provided context
 
 {format_instructions}
 Context : {context}
