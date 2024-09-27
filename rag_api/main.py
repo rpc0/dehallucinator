@@ -1,5 +1,7 @@
 from fastapi import FastAPI
+
 from starlette.middleware.cors import CORSMiddleware
+
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
@@ -10,6 +12,9 @@ from langchain import hub
 from langchain_community.llms import Ollama
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
+from langchain.prompts import PromptTemplate
+from langchain_core.output_parsers import JsonOutputParser
+
 
 from operator import itemgetter
 
@@ -17,6 +22,7 @@ import logging
 
 import deh.settings as settings
 from deh.utils import format_context_documents as format_docs
+from deh.prompts import qa_eval_prompt_with_context_text, LLMEvalResult
 
 app = FastAPI()
 
@@ -136,7 +142,7 @@ async def answer(question: str):
         callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
     )
 
-    response = basic_rag_chain_with_context(retriever, question, llm)
+    response = rag_chain_with_llm_context_self_evaluation(retriever, question, llm)
     return {
         "response": response,
         # Diagnostic values used for measurement logging, etc:
@@ -154,13 +160,17 @@ def basic_rag_chain(retriever, question, llm):
 
     qa_prompt = hub.pull("rlm/rag-prompt-llama")
 
+    # fmt: off
     rag_chain = (
         RunnableParallel(
-            context=retriever | format_docs, question=RunnablePassthrough()
+            context=retriever | format_docs, 
+            question=RunnablePassthrough()
         )
         | qa_prompt
         | llm
     )
+    # fmt: on
+
     return rag_chain.invoke(question)
 
 
@@ -169,16 +179,60 @@ def basic_rag_chain_with_context(retriever, question, llm):
 
     qa_prompt = hub.pull(settings.LLM_PROMPT)
 
-    #    rag_chain = RunnableParallel(
-    #        context=retriever | format_docs, question=RunnablePassthrough()
-    #    ) | RunnableParallel(qa_prompt | llm, context=itemgetter("context"))
-
-    rag_chain = RunnableParallel(
-        context=retriever | format_docs, question=RunnablePassthrough()
-    ) | RunnableParallel(
-        answer=qa_prompt | llm,
-        question=itemgetter("question"),
-        context=itemgetter("context"),
+    # fmt: off
+    rag_chain = (
+        RunnableParallel(
+            context=retriever | format_docs, 
+            question=RunnablePassthrough() )
+        | RunnableParallel(
+            answer=qa_prompt | llm,
+            question=itemgetter("question"),
+            context=itemgetter("context"),
+        )
     )
+    # fmt: on
+
+    return rag_chain.invoke(question)
+
+
+def rag_chain_context_similarity_exception(retriever, question, llm):
+    """Throw exception if below answer_similarity (v1)."""
+    # TODO: https://stackoverflow.com/questions/78379953/accessing-langchain-lcel-variables-from-prior-steps-in-the-chain
+
+
+def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
+    """RAG Chain with exception based on context similarity (stretch-vX)."""
+
+    # Structure definition for evaluation result:
+    json_parser = JsonOutputParser(pydantic_object=LLMEvalResult)
+
+    # Evaluation prompt definition:
+    qa_eval_prompt_with_context = PromptTemplate(
+        template=qa_eval_prompt_with_context_text,
+        input_variables=["question", "answer", "context"],
+        partial_variables={
+            "format_instructions": json_parser.get_format_instructions()
+        },
+    )
+
+    qa_prompt = hub.pull(settings.LLM_PROMPT)
+
+    # fmt: off
+    rag_chain = (
+        RunnableParallel(
+            context = retriever | format_docs, 
+            question = RunnablePassthrough() )
+        | RunnableParallel(
+            answer= qa_prompt | llm, 
+            question = itemgetter("question"), 
+            context = itemgetter("context") )
+        | RunnableParallel(
+            answer = itemgetter("answer"),
+            question = itemgetter("question"),
+            context = itemgetter("context"),
+            evaluation = qa_eval_prompt_with_context | llm | json_parser
+        )
+    )
+    # fmt: on
 
     return rag_chain.invoke(question)
