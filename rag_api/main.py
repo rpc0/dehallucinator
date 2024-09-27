@@ -22,7 +22,6 @@ import logging
 
 import deh.settings as settings
 from deh.utils import format_context_documents as format_docs
-from deh.utils import retrieve_content as retrieve_answer
 from deh.prompts import qa_eval_prompt_with_context_text, LLMEvalResult
 
 app = FastAPI()
@@ -143,7 +142,7 @@ async def answer(question: str):
         callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
     )
 
-    response = basic_rag_chain_with_context(retriever, question, llm)
+    response = rag_chain_with_llm_context_self_evaluation(retriever, question, llm)
     return {
         "response": response,
         # Diagnostic values used for measurement logging, etc:
