@@ -42,11 +42,14 @@ textarea {
 </div>
 
 <div class="card-section">
+    <div class="card-title">Evaluation:</div>
+    <div id="evaluation"></div>
+</div>
+
+<div class="card-sectoin">
     <div class="card-title">Configuration Details:</div>
     <div id="config"></div>
 </div>
-
-
 
 {% endblock %}
 {% block js %}
@@ -74,6 +77,7 @@ function submitquestion() {
 
     answer = document.getElementById("answer")
     context = document.getElementById("context")
+    evaluation = document.getElementById("evaluation")
 
     axios.get('/answer?question=' + encodeURI(question_text))
         .then(function (response) {
@@ -81,6 +85,7 @@ function submitquestion() {
             console.log(answer_text);
             answer.innerHTML = answer_text.response.answer
             context.innerHTML = answer_text.response.context.replaceAll('------------', "<br/><br/>")
+            evaluation.innerHTML = answer_text.response.evaluation.grade + "<br/><br/> " + answer_text.response.evaluation.description
         });
 }
 </script>
