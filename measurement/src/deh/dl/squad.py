@@ -8,6 +8,7 @@ from pathlib import Path
 
 from deh.assessment import QASet
 from deh.dl import AssessmentDataDownloader
+from typing import Optional
 
 
 class SquadAssessmentDataDownloader(AssessmentDataDownloader):
@@ -17,7 +18,11 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
     FULL = "https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v2.0.json"
 
     def __init__(
-        self, dl_url: str = DEV, filter_impossible=True, cache_dir: str = None
+        self,
+        dl_url: str = DEV,
+        filter_impossible=True,
+        cache_dir: str = None,
+        limit_size: Optional[int] = None,
     ) -> None:
         """Download and convert file to expected format.
         - dl_url: url of the file to download [DEV|FULL]
@@ -60,6 +65,12 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
         possible_qas = jmespath.search(
             f"data[*].paragraphs[*].qas[{filter_str}][]", json_data
         )
+
+        # Optional size limit:
+        if limit_size:
+            self._contexts = self._contexts[0:limit_size]
+            possible_qas = possible_qas[0:limit_size]
+
         self._qaset = []
         for qas in possible_qas:
             for qa in qas:
@@ -69,7 +80,12 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
                     self._qaset.append(QASet(question, answer, False))
 
 
-def download_squad_qa_dataset(cache_folder: str, context_folder: str, qas_file: str):
-    dl = SquadAssessmentDataDownloader(cache_dir=cache_folder)
+def download_squad_qa_dataset(
+    cache_folder: str,
+    context_folder: str,
+    qas_file: str,
+    limit_size: Optional[int] = None,
+):
+    dl = SquadAssessmentDataDownloader(cache_dir=cache_folder, limit_size=limit_size)
     dl.save_contexts(context_folder)
     dl.save_question_answers(qas_file)
