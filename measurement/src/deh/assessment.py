@@ -5,7 +5,7 @@ Classes to manage download assessment datasets.
 from dataclasses import dataclass
 
 import random
-from typing import List
+from typing import List, Optional
 from datasets import Dataset
 
 
@@ -80,7 +80,9 @@ class ExperimentSet(QASet):
 class QASetRetriever:
 
     @classmethod
-    def get_qasets(clz, file_path: str, sample_size=None) -> List[QASet]:
+    def get_qasets(
+        clz, file_path: str, sample_size: Optional[int] = None
+    ) -> List[QASet]:
         qa_set = []
         with open(f"{file_path}", "r") as f:
             qa_set = [line.strip().split("\t") for line in f]
