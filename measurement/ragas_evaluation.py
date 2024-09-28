@@ -13,9 +13,11 @@ import urllib.parse
 import argparse
 import time
 import pandas as pd
+import numpy as np
 from pathlib import Path
 import os
 from datasets import Dataset
+import math
 
 
 def create_api_answer_url(question: str):
@@ -86,17 +88,21 @@ if __name__ == "__main__":
         cnt = 1
         for qa in qa_set:
             print(f"Processing {cnt} of {qa_set_cnt} question/answer pairs.")
-            response = generate_answer(qa.question)
-            answer = response["response"]["answer"]
-            contexts = response["response"]["context"]
+            try:
+                response = generate_answer(qa.question)
+                answer = response["response"]["answer"]
+                contexts = response["response"]["context"]
 
-            experiments.append(
-                ExperimentSet(
-                    qaset=qa,
-                    gen_answer=answer,
-                    contexts=contexts.split("------------"),
+                experiments.append(
+                    ExperimentSet(
+                        qaset=qa,
+                        gen_answer=answer,
+                        contexts=contexts.split("------------"),
+                    )
                 )
-            )
+            except:
+                print(f"Error processing {cnt} of {qa_set_cnt}")
+
             cnt = cnt + 1
 
         exp_df = ExperimentSet.to_DataSet(experiments).to_pandas()
@@ -115,7 +121,6 @@ if __name__ == "__main__":
 
     # Load cached results:
     exp_df = pd.read_pickle(cache_file)
-    ds_exp = Dataset.from_pandas(exp_df)
 
     # Models used for assessment:
     embedding = OllamaEmbeddings(
@@ -128,14 +133,22 @@ if __name__ == "__main__":
         model=settings.ASSESSMENT_LLM_MODEL,
     )
 
-    result = evaluate(
-        ds_exp, metrics=[answer_similarity], embeddings=embedding, llm=llm
-    )
+    chunk_size = 10
+    chunked_df = np.array_split(exp_df, math.ceil(len(exp_df) / chunk_size))
+    results = []
 
-    print(f"Completed evaluation with total values of {result}.")
+    for chunk_df in chunked_df:
+        ds_exp = Dataset.from_pandas(chunk_df)
+        result = evaluate(
+            ds_exp, metrics=[answer_similarity], embeddings=embedding, llm=llm
+        )
+
+        results.append( result )
+        print(f"Completed evaluation with total values of {result}.")
 
     # Save experiment results:
-    result_df = result.to_pandas()
+    result_df = pd.concat( [result.to_pandas() for result in results] )
+    
     timestr = time.strftime("%Y%m%d-%H%M%S")
     path_to_evaluation = f"{args.evaluation_folder}/{timestr}.csv"
 
