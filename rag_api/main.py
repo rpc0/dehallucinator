@@ -6,6 +6,8 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain import hub
@@ -18,7 +20,8 @@ from langchain_core.output_parsers import JsonOutputParser
 
 from operator import itemgetter
 
-import logging
+import logging 
+from tqdm import tqdm
 
 import deh.settings as settings
 from deh.utils import format_context_documents as format_docs
@@ -36,6 +39,7 @@ app.add_middleware(
 )
 
 logger = logging.getLogger(__name__)
+logging.basicConfig(level=logging.INFO) #logging.basicConfig(level=logging.DEBUG)
 
 # Global Application variables
 vector_store = None
@@ -51,6 +55,8 @@ async def startup_event():
     """Cache vector store at start-up."""
     try:
         initialize_vectorstore(document_location, "**/*.context")
+        global vector_store
+        print(f"Vector Store Loaded {vector_store}")
 
     except Exception as exc:
         print(str(exc))
@@ -58,11 +64,10 @@ async def startup_event():
 
 def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     """Initialize and cache vector store interface."""
-
+    print("Initializing vector store...")
     global vector_store
     global TXT_SPLITTER
     global DOCS_LOADED
-
     # Initialize model from artifact-store:
     if not vector_store:
         text_loader_kwargs = {"autodetect_encoding": True}
@@ -72,9 +77,9 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
             glob=doc_filter,
             loader_cls=TextLoader,
             loader_kwargs=text_loader_kwargs,
-            silent_errors=True,
+            silent_errors=False,
         )
-        data = loader.load()
+        data = list(tqdm(loader.load(), desc="Loading documents")) #data = loader.load()
         doc_count = len(data)
         logger.info(f"Loaded {doc_count} documents")
 
@@ -87,12 +92,21 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         TXT_SPLITTER = text_splitter.__class__.__name__
 
         all_splits = text_splitter.split_documents(data)
-        logger.debug(f"Split into {len(all_splits)} chunks")
+        logger.info(f"Split into {len(all_splits)} chunks")
 
+        # Initialize the vector store with GPU embedding function 
+        model_kwargs = {'device': 'cuda'}
+        encode_kwargs = {'normalize_embeddings': True}
         vector_store = Chroma.from_documents(
-            documents=all_splits,
-            embedding=HuggingFaceEmbeddings(model_name=settings.EMBEDDING_MODEL),
+            collection_name="Squad2.0",
+            documents=tqdm(all_splits, desc="Vectorizing documents"), #all_splits,
+            embedding=HuggingFaceEmbeddings(
+                model_name=settings.EMBEDDING_MODEL, 
+                model_kwargs=model_kwargs,
+                encode_kwargs=encode_kwargs),
+            persist_directory=doc_loc+"/cache",
         )
+        logger.info(f"Vector Store Loaded {vector_store} and {doc_count} documents.")
 
         DOCS_LOADED = doc_count
         return doc_count
@@ -132,7 +146,8 @@ async def load_model(doc_path: str, doc_filter: str):
 async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
-
+    global vector_store
+    print(f"{DOCS_LOADED} documents loaded into vector store.")
     retriever = vector_store.as_retriever()
 
     llm = Ollama(
