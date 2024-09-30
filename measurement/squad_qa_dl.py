@@ -7,7 +7,7 @@ if __name__ == "__main__":
     parser.add_argument("--cache_folder", default="./data/qa_dl_cache/")
     parser.add_argument("--context_folder", default="./data/contexts/")
     parser.add_argument("--qas_file", default="./data/qas/squad_qas.tsv")
-    parser.add_argument("--limit_size", default=50)
+    parser.add_argument("--limit_size", default=None)
     args = parser.parse_args()
 
     # Console print output:
