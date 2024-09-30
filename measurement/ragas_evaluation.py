@@ -50,7 +50,7 @@ if __name__ == "__main__":
     parser.add_argument("--qas_file", default="./data/qas/squad_qas.tsv")
     parser.add_argument("--evaluation_folder", default="./data/evaluation/")
     parser.add_argument("--cache_folder", default="./data/evaluation_cache/")
-    parser.add_argument("--sample_size", default=50)
+    parser.add_argument("--sample_size", default=None)
 
     args = parser.parse_args()
 
