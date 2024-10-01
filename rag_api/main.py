@@ -22,7 +22,11 @@ import logging
 
 import deh.settings as settings
 from deh.utils import format_context_documents as format_docs
-from deh.prompts import qa_eval_prompt_with_context_text, LLMEvalResult
+from deh.prompts import (
+    qa_eval_prompt_with_context_text,
+    LLMEvalResult,
+    rag_prompt_llama_text,
+)
 
 app = FastAPI()
 
@@ -177,7 +181,9 @@ def basic_rag_chain(retriever, question, llm):
 def basic_rag_chain_with_context(retriever, question, llm):
     """Simplest RAG Chain (v0.1) implementation which includes context pass-through."""
 
-    qa_prompt = hub.pull(settings.LLM_PROMPT)
+    qa_prompt = PromptTemplate(
+        template=rag_prompt_llama_text, input_variables=["question", "context"]
+    )
 
     # fmt: off
     rag_chain = (
