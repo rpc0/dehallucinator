@@ -2,15 +2,17 @@ from fastapi import FastAPI
 
 from starlette.middleware.cors import CORSMiddleware
 
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
-
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain import hub
+from langchain_core.runnables import chain
+from langchain_core.documents import Document
 from langchain_community.llms import Ollama
 from langchain.callbacks.manager import CallbackManager
 from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
@@ -19,11 +21,12 @@ from langchain_core.output_parsers import JsonOutputParser
 
 
 from operator import itemgetter
-
-import logging 
+from typing import List
+import logging
 from tqdm import tqdm
 
 import deh.settings as settings
+import deh.guardrail as guardrail
 from deh.utils import format_context_documents as format_docs
 from deh.prompts import (
     qa_eval_prompt_with_context_text,
@@ -43,7 +46,7 @@ app.add_middleware(
 )
 
 logger = logging.getLogger(__name__)
-logging.basicConfig(level=logging.INFO) #logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)  # logging.basicConfig(level=logging.DEBUG)
 
 # Global Application variables
 vector_store = None
@@ -83,7 +86,9 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
             loader_kwargs=text_loader_kwargs,
             silent_errors=False,
         )
-        data = list(tqdm(loader.load(), desc="Loading documents")) #data = loader.load()
+        data = list(
+            tqdm(loader.load(), desc="Loading documents")
+        )  # data = loader.load()
         doc_count = len(data)
         logger.info(f"Loaded {doc_count} documents")
 
@@ -98,17 +103,18 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         all_splits = text_splitter.split_documents(data)
         logger.info(f"Split into {len(all_splits)} chunks")
 
-        # Initialize the vector store with GPU embedding function 
-        model_kwargs = {'device': 'cuda'}
-        encode_kwargs = {'normalize_embeddings': True}
+        # Initialize the vector store with GPU embedding function
+        model_kwargs = {"device": "cuda"}
+        encode_kwargs = {"normalize_embeddings": True}
         vector_store = Chroma.from_documents(
             collection_name="Squad2.0",
-            documents=tqdm(all_splits, desc="Vectorizing documents"), #all_splits,
+            documents=tqdm(all_splits, desc="Vectorizing documents"),  # all_splits,
             embedding=HuggingFaceEmbeddings(
-                model_name=settings.EMBEDDING_MODEL, 
+                model_name=settings.EMBEDDING_MODEL,
                 model_kwargs=model_kwargs,
-                encode_kwargs=encode_kwargs),
-            persist_directory=doc_loc+"/cache",
+                encode_kwargs=encode_kwargs,
+            ),
+            persist_directory=doc_loc + "/cache",
         )
         logger.info(f"Vector Store Loaded {vector_store} and {doc_count} documents.")
 
@@ -146,12 +152,25 @@ async def load_model(doc_path: str, doc_filter: str):
     return {"status": "success", "doc_path": doc_path, "doc_count": doc_count}
 
 
+@chain
+def retriever_with_scores(query: str) -> List[Document]:
+    """Retrieve documents from vectorstore with similarity score."""
+    # https://python.langchain.com/docs/how_to/add_scores_retriever/
+    docs, scores = zip(*vector_store.similarity_search_with_score(query))
+    for doc, score in zip(docs, scores):
+        doc.metadata["similarity_score"] = score
+
+    return docs
+
+
 @app.get("/answer")
 async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
     global vector_store
     print(f"{DOCS_LOADED} documents loaded into vector store.")
+
+    # https://python.langchain.com/v0.1/docs/modules/data_connection/retrievers/vectorstore/
     retriever = vector_store.as_retriever()
 
     llm = Ollama(
@@ -161,7 +180,11 @@ async def answer(question: str):
         callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
     )
 
-    response = rag_chain_with_llm_context_self_evaluation(retriever, question, llm)
+    try:
+        response = rag_chain_context_similarity_exception(retriever, question, llm)
+    except guardrail.GuardRailException as exc:
+        response = {"error", exc}
+
     return {
         "response": response,
         # Diagnostic values used for measurement logging, etc:
@@ -217,8 +240,26 @@ def basic_rag_chain_with_context(retriever, question, llm):
 
 
 def rag_chain_context_similarity_exception(retriever, question, llm):
-    """Throw exception if below answer_similarity (v1)."""
-    # TODO: https://stackoverflow.com/questions/78379953/accessing-langchain-lcel-variables-from-prior-steps-in-the-chain
+    """Throw exception if below answer_similarity threshold (v1)."""
+
+    qa_prompt = PromptTemplate(
+        template=rag_prompt_llama_text, input_variables=["question", "context"]
+    )
+
+    # fmt: off
+    rag_chain = (
+        RunnableParallel(
+            context=retriever_with_scores | guardrail.similarity_guardrail(settings.SIMILIARITY_THRESHOLD) | format_docs, 
+            question=RunnablePassthrough() )
+        | RunnableParallel(
+            answer=qa_prompt | llm,
+            question=itemgetter("question"),
+            context=itemgetter("context"),
+        )
+    )
+    # fmt: on
+
+    return rag_chain.invoke(question)
 
 
 def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
