@@ -15,5 +15,7 @@ EMBEDDING_MODEL = os.environ.get(
     "EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2"
 )
 
+SIMILIARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "2.0"))
+
 TXT_CHUNK_SIZE = int(os.environ.get("TXT_CHUNK_SIZE", "1500"))
 TXT_CHUNK_OVERLAP = int(os.environ.get("TXT_CHUNK_OVERLAP", "100"))
