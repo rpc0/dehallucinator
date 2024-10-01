@@ -146,7 +146,7 @@ async def answer(question: str):
         callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
     )
 
-    response = basic_rag_chain_with_context(retriever, question, llm)
+    response = rag_chain_with_llm_context_self_evaluation(retriever, question, llm)
     return {
         "response": response,
         # Diagnostic values used for measurement logging, etc:
