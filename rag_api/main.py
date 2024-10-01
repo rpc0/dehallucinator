@@ -183,7 +183,7 @@ async def answer(question: str):
     try:
         response = rag_chain_context_similarity_exception(retriever, question, llm)
     except guardrail.GuardRailException as exc:
-        response = {"error", exc}
+        response = {"error": ",".join(exc.args)}
 
     return {
         "response": response,
