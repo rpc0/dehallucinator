@@ -133,7 +133,8 @@ if __name__ == "__main__":
         model=settings.ASSESSMENT_LLM_MODEL,
     )
 
-    chunk_size = 10
+    # TODO: Make this a configuration parameter:
+    chunk_size = 500
     chunked_df = np.array_split(exp_df, math.ceil(len(exp_df) / chunk_size))
     results = []
 
