@@ -55,7 +55,7 @@ async def startup_event():
     """Cache vector store at start-up."""
     try:
         initialize_vectorstore(document_location, "**/*.context")
-        global vector_store
+        
         print(f"Vector Store Loaded {vector_store}")
 
     except Exception as exc:
@@ -64,7 +64,7 @@ async def startup_event():
 
 def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     """Initialize and cache vector store interface."""
-    print("Initializing vector store...")
+    logger.info("Initializing vector store...")
     global vector_store
     global TXT_SPLITTER
     global DOCS_LOADED
@@ -146,7 +146,7 @@ async def load_model(doc_path: str, doc_filter: str):
 async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
-    global vector_store
+    
     print(f"{DOCS_LOADED} documents loaded into vector store.")
     retriever = vector_store.as_retriever()
 
@@ -251,3 +251,16 @@ def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
     # fmt: on
 
     return rag_chain.invoke(question)
+
+def rag_chain_with_search(retriever, question, llm):
+    """RAG Chain with search
+    Steps:  1. Search for relevant documents online and vectorize them
+            2. Search for relevant documents in the vector store
+            3. Contextualize the prompt template and configure the RAG chain
+            4. Invoke the RAG chain with the question
+            5. Evaluate the response-question pair in relation to the context
+    """
+    
+
+
+    return None
