@@ -16,6 +16,7 @@ EMBEDDING_MODEL = os.environ.get(
 )
 
 SIMILIARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "2.0"))
+CONTEXT_DOCUMENTS_RETRIEVED = int(os.environ.get("CONTEXT_DOCUMENTS_RETRIEVED", "20"))
 
 TXT_CHUNK_SIZE = int(os.environ.get("TXT_CHUNK_SIZE", "1500"))
 TXT_CHUNK_OVERLAP = int(os.environ.get("TXT_CHUNK_OVERLAP", "100"))

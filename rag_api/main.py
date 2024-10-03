@@ -156,7 +156,11 @@ async def load_model(doc_path: str, doc_filter: str):
 def retriever_with_scores(query: str) -> List[Document]:
     """Retrieve documents from vectorstore with similarity score."""
     # https://python.langchain.com/docs/how_to/add_scores_retriever/
-    docs, scores = zip(*vector_store.similarity_search_with_score(query))
+    docs, scores = zip(
+        *vector_store.similarity_search_with_score(
+            query, k=settings.CONTEXT_DOCUMENTS_RETRIEVED
+        )
+    )
     for doc, score in zip(docs, scores):
         doc.metadata["similarity_score"] = score
 
@@ -183,6 +187,7 @@ async def answer(question: str):
     try:
         response = rag_chain_context_similarity_exception(retriever, question, llm)
     except guardrail.GuardRailException as exc:
+        # TODO: Improve exception handling
         response = {"error": ",".join(exc.args)}
 
     return {
