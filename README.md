@@ -23,6 +23,7 @@ It is recommended to use [VSCode](https://code.visualstudio.com/) as development
 * WSL (from Microsoft) - if using Windows WSL development environment
 * Docker (from Microsoft) - for Docker file and resource management
 * markdownlint - for Markdown (MD) file linting
+* GitHub Pull Requests - integrates PR review feedback
 
 ### Windows Users (Recommended - WSL)
 
