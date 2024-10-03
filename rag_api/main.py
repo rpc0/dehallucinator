@@ -8,6 +8,8 @@ from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
+from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain import hub
@@ -48,6 +50,7 @@ app.add_middleware(
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)  # logging.basicConfig(level=logging.DEBUG)
 
+
 # Global Application variables
 vector_store = None
 document_location = settings.DATA_FOLDER
@@ -62,7 +65,6 @@ async def startup_event():
     """Cache vector store at start-up."""
     try:
         initialize_vectorstore(document_location, "**/*.context")
-        global vector_store
         print(f"Vector Store Loaded {vector_store}")
 
     except Exception as exc:
@@ -71,7 +73,8 @@ async def startup_event():
 
 def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     """Initialize and cache vector store interface."""
-    print("Initializing vector store...")
+
+    logger.info("Initializing vector store...")
     global vector_store
     global TXT_SPLITTER
     global DOCS_LOADED
@@ -86,9 +89,11 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
             loader_kwargs=text_loader_kwargs,
             silent_errors=False,
         )
+
         data = list(
             tqdm(loader.load(), desc="Loading documents")
-        )  # data = loader.load()
+        )
+
         doc_count = len(data)
         logger.info(f"Loaded {doc_count} documents")
 
@@ -115,6 +120,7 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
                 encode_kwargs=encode_kwargs,
             ),
             persist_directory=doc_loc + "/cache",
+
         )
         logger.info(f"Vector Store Loaded {vector_store} and {doc_count} documents.")
 
@@ -171,10 +177,8 @@ def retriever_with_scores(query: str) -> List[Document]:
 async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
-    global vector_store
+    
     print(f"{DOCS_LOADED} documents loaded into vector store.")
-
-    # https://python.langchain.com/v0.1/docs/modules/data_connection/retrievers/vectorstore/
     retriever = vector_store.as_retriever()
 
     llm = Ollama(
@@ -303,3 +307,16 @@ def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
     # fmt: on
 
     return rag_chain.invoke(question)
+
+def rag_chain_with_search(retriever, question, llm):
+    """RAG Chain with search
+    Steps:  1. Search for relevant documents online and vectorize them
+            2. Search for relevant documents in the vector store
+            3. Contextualize the prompt template and configure the RAG chain
+            4. Invoke the RAG chain with the question
+            5. Evaluate the response-question pair in relation to the context
+    """
+    
+
+
+    return None
