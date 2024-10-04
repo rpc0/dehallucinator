@@ -21,7 +21,7 @@ from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 
-
+from contextlib import asynccontextmanager
 from operator import itemgetter
 from typing import List
 import logging
@@ -34,17 +34,6 @@ from deh.prompts import (
     qa_eval_prompt_with_context_text,
     LLMEvalResult,
     rag_prompt_llama_text,
-)
-
-app = FastAPI()
-
-# Enable CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=False,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
 )
 
 logger = logging.getLogger(__name__)
@@ -60,15 +49,32 @@ TXT_SPLITTER = ""
 DOCS_LOADED = 0
 
 
-@app.on_event("startup")
-async def startup_event():
-    """Cache vector store at start-up."""
-    try:
-        initialize_vectorstore(document_location, "**/*.context")
-        print(f"Vector Store Loaded {vector_store}")
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Responsible for managing start-up and shutdown.
+    https://fastapi.tiangolo.com/advanced/events/#lifespan
+    """
 
-    except Exception as exc:
-        print(str(exc))
+    # Initialize vector store:
+    initialize_vectorstore(document_location, "**/*.context")
+    print(f"Vector Store Loaded {vector_store}")
+    yield
+
+    # Resource clean-up:
+    vector_store = None
+
+
+# Create the FASTAPI App
+app = FastAPI(lifespan=lifespan)
+
+# Enable CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
@@ -90,9 +96,7 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
             silent_errors=False,
         )
 
-        data = list(
-            tqdm(loader.load(), desc="Loading documents")
-        )
+        data = list(tqdm(loader.load(), desc="Loading documents"))
 
         doc_count = len(data)
         logger.info(f"Loaded {doc_count} documents")
@@ -120,7 +124,6 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
                 encode_kwargs=encode_kwargs,
             ),
             persist_directory=doc_loc + "/cache",
-
         )
         logger.info(f"Vector Store Loaded {vector_store} and {doc_count} documents.")
 
@@ -177,7 +180,7 @@ def retriever_with_scores(query: str) -> List[Document]:
 async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
-    
+
     print(f"{DOCS_LOADED} documents loaded into vector store.")
     retriever = vector_store.as_retriever()
 
@@ -307,16 +310,3 @@ def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
     # fmt: on
 
     return rag_chain.invoke(question)
-
-def rag_chain_with_search(retriever, question, llm):
-    """RAG Chain with search
-    Steps:  1. Search for relevant documents online and vectorize them
-            2. Search for relevant documents in the vector store
-            3. Contextualize the prompt template and configure the RAG chain
-            4. Invoke the RAG chain with the question
-            5. Evaluate the response-question pair in relation to the context
-    """
-    
-
-
-    return None
