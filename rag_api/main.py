@@ -2,34 +2,28 @@ from fastapi import FastAPI
 
 from starlette.middleware.cors import CORSMiddleware
 
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
+import chromadb
 
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import Chroma
-from chromadb.utils.embedding_functions import SentenceTransformerEmbeddingFunction
 
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
-from langchain import hub
-from langchain_core.runnables import chain
-from langchain_core.documents import Document
 from langchain_community.llms import Ollama
-from langchain.callbacks.manager import CallbackManager
-from langchain.callbacks.streaming_stdout import StreamingStdOutCallbackHandler
 from langchain.prompts import PromptTemplate
 from langchain_core.output_parsers import JsonOutputParser
 
 from contextlib import asynccontextmanager
 from operator import itemgetter
-from typing import List
 import logging
 from tqdm import tqdm
 
 import deh.settings as settings
 import deh.guardrail as guardrail
 from deh.utils import format_context_documents as format_docs
+from deh.utils import retriever_with_scores, dedupulicate_contexts
 from deh.prompts import (
     qa_eval_prompt_with_context_text,
     LLMEvalResult,
@@ -41,10 +35,7 @@ logging.basicConfig(level=logging.INFO)  # logging.basicConfig(level=logging.DEB
 
 
 # Global Application variables
-vector_store = None
-document_location = settings.DATA_FOLDER
-
-# Application Status Parameters:
+VECTOR_STORE = None
 TXT_SPLITTER = ""
 DOCS_LOADED = 0
 
@@ -56,12 +47,8 @@ async def lifespan(app: FastAPI):
     """
 
     # Initialize vector store:
-    initialize_vectorstore(document_location, "**/*.context")
-    print(f"Vector Store Loaded {vector_store}")
+    initialize_vectorstore(settings.DATA_FOLDER, "**/*.context")
     yield
-
-    # Resource clean-up:
-    vector_store = None
 
 
 # Create the FASTAPI App
@@ -81,25 +68,50 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     """Initialize and cache vector store interface."""
 
     logger.info("Initializing vector store...")
-    global vector_store
+    global VECTOR_STORE
     global TXT_SPLITTER
     global DOCS_LOADED
-    # Initialize model from artifact-store:
-    if not vector_store:
-        text_loader_kwargs = {"autodetect_encoding": True}
+
+    # Initialize remote connection to ChromaDB vector store:
+    remote_chroma_client = chromadb.HttpClient(host=settings.CHROMA_DB_HOST, port=8000)
+
+    collection_exists = False
+    try:
+        collection = remote_chroma_client.get_collection(settings.CHROMA_DB_COLLECTION)
+        DOCS_LOADED = collection.count()
+        collection_exists = True
+    except:
+        logger.info("Collection does not exists, needs to be created.")
+        remote_chroma_client.create_collection(name=settings.CHROMA_DB_COLLECTION)
+
+    # Initialize embedding function:
+    embedding_fxn = HuggingFaceEmbeddings(
+        model_name=settings.EMBEDDING_MODEL,
+        model_kwargs={"device": "cuda"},
+        encode_kwargs={"normalize_embeddings": True},
+    )
+
+    VECTOR_STORE = Chroma(
+        collection_name=settings.CHROMA_DB_COLLECTION,
+        embedding_function=embedding_fxn,
+        client=remote_chroma_client,
+    )
+
+    # If collection didn't exist, load documents and embeddings:
+    if not collection_exists:
 
         loader = DirectoryLoader(
             path=doc_loc,
             glob=doc_filter,
             loader_cls=TextLoader,
-            loader_kwargs=text_loader_kwargs,
+            loader_kwargs={"autodetect_encoding": True},
             silent_errors=False,
         )
 
         data = list(tqdm(loader.load(), desc="Loading documents"))
 
-        doc_count = len(data)
-        logger.info(f"Loaded {doc_count} documents")
+        DOCS_LOADED = len(data)
+        logger.info(f"Loaded {DOCS_LOADED} documents")
 
         # Split into chunks
         text_splitter = RecursiveCharacterTextSplitter(
@@ -112,30 +124,16 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         all_splits = text_splitter.split_documents(data)
         logger.info(f"Split into {len(all_splits)} chunks")
 
-        # Initialize the vector store with GPU embedding function
-        model_kwargs = {"device": "cuda"}
-        encode_kwargs = {"normalize_embeddings": True}
-        vector_store = Chroma.from_documents(
-            collection_name="Squad2.0",
-            documents=tqdm(all_splits, desc="Vectorizing documents"),  # all_splits,
-            embedding=HuggingFaceEmbeddings(
-                model_name=settings.EMBEDDING_MODEL,
-                model_kwargs=model_kwargs,
-                encode_kwargs=encode_kwargs,
-            ),
-            persist_directory=doc_loc + "/cache",
-        )
-        logger.info(f"Vector Store Loaded {vector_store} and {doc_count} documents.")
+        # Load documents:
+        # https://docs.trychroma.com/guides
+        VECTOR_STORE.add_documents(all_splits)
 
-        DOCS_LOADED = doc_count
-        return doc_count
+        return DOCS_LOADED
 
 
-@app.get("/")
-async def root():
-    """Hello world default end-point for application key parameter visibilty."""
+def get_settings():
+    """JSON encoding of system settings."""
     return {
-        "application": "DEH Application APIs",
         # Model and Vector Store Params:
         "llm_model": settings.LLM_MODEL,
         "llm_prompt": settings.LLM_PROMPT,
@@ -143,37 +141,28 @@ async def root():
         "text_splitter": TXT_SPLITTER,
         "text_chunk_size": settings.TXT_CHUNK_SIZE,
         "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
+        "context_similarity_threshold": settings.SIMILARITY_THRESHOLD,
+        "context_docs_retrieved": settings.CONTEXT_DOCUMENTS_RETRIEVED,
         # Doc Count:
         "docs_loaded": DOCS_LOADED,
     }
+
+
+@app.get("/")
+async def root():
+    """Hello world default end-point for application key parameter visibilty."""
+    return {"application": "DEH Application APIs", "system_settings": get_settings()}
 
 
 @app.get("/doc/load")
 async def load_model(doc_path: str, doc_filter: str):
     """Re-initializes vector store with new document corpus."""
 
-    # TODO: Need to further implement/check (future feature)
-    global vector_store
+    global VECTOR_STORE
     vector_store = None
+    initialize_vectorstore(doc_path, doc_filter)
 
-    doc_count = initialize_vectorstore(doc_path, doc_filter)
-
-    return {"status": "success", "doc_path": doc_path, "doc_count": doc_count}
-
-
-@chain
-def retriever_with_scores(query: str) -> List[Document]:
-    """Retrieve documents from vectorstore with similarity score."""
-    # https://python.langchain.com/docs/how_to/add_scores_retriever/
-    docs, scores = zip(
-        *vector_store.similarity_search_with_score(
-            query, k=settings.CONTEXT_DOCUMENTS_RETRIEVED
-        )
-    )
-    for doc, score in zip(docs, scores):
-        doc.metadata["similarity_score"] = score
-
-    return docs
+    return {"status": "success", "doc_path": doc_path, "doc_count": DOCS_LOADED}
 
 
 @app.get("/answer")
@@ -181,106 +170,43 @@ async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
-    print(f"{DOCS_LOADED} documents loaded into vector store.")
-    retriever = vector_store.as_retriever()
-
-    llm = Ollama(
-        base_url=settings.OLLAMA_HOST,
-        model=settings.LLM_MODEL,
-        verbose=True,
-        callback_manager=CallbackManager([StreamingStdOutCallbackHandler()]),
-    )
+    llm = Ollama(base_url=settings.OLLAMA_HOST, model=settings.LLM_MODEL, verbose=True)
 
     try:
-        response = rag_chain_context_similarity_exception(retriever, question, llm)
+        response = rag_chain(question, llm)
     except guardrail.GuardRailException as exc:
-        # TODO: Improve exception handling
-        response = {"error": ",".join(exc.args)}
+        logger.info("GuardRailException: " + ",".join(exc.args))
+        response = {"errors": exc.args, "system_settings": get_settings()}
 
     return {
+        # RAG chain response:
         "response": response,
-        # Diagnostic values used for measurement logging, etc:
-        "llm_model": settings.LLM_MODEL,
-        "llm_prompt": settings.LLM_PROMPT,
-        "embedding_model": settings.EMBEDDING_MODEL,
-        "text_splitter": TXT_SPLITTER,
-        "text_chunk_size": settings.TXT_CHUNK_SIZE,
-        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
+        # System values used for measurement logging, etc:
+        "system_settings": get_settings(),
     }
 
 
-def basic_rag_chain(retriever, question, llm):
-    """Simplest RAG Chain (v0) implementation."""
+def rag_chain(question, llm):
+    """RAG Chain implementation including:
+    - Context similarity guardrail
+    - LLM as judge evaluation
 
-    qa_prompt = hub.pull("rlm/rag-prompt-llama")
-
-    # fmt: off
-    rag_chain = (
-        RunnableParallel(
-            context=retriever | format_docs, 
-            question=RunnablePassthrough()
-        )
-        | qa_prompt
-        | llm
-    )
-    # fmt: on
-
-    return rag_chain.invoke(question)
-
-
-def basic_rag_chain_with_context(retriever, question, llm):
-    """Simplest RAG Chain (v0.1) implementation which includes context pass-through."""
-
-    qa_prompt = PromptTemplate(
-        template=rag_prompt_llama_text, input_variables=["question", "context"]
-    )
-
-    # fmt: off
-    rag_chain = (
-        RunnableParallel(
-            context=retriever | format_docs, 
-            question=RunnablePassthrough() )
-        | RunnableParallel(
-            answer=qa_prompt | llm,
-            question=itemgetter("question"),
-            context=itemgetter("context"),
-        )
-    )
-    # fmt: on
-
-    return rag_chain.invoke(question)
-
-
-def rag_chain_context_similarity_exception(retriever, question, llm):
-    """Throw exception if below answer_similarity threshold (v1)."""
-
-    qa_prompt = PromptTemplate(
-        template=rag_prompt_llama_text, input_variables=["question", "context"]
-    )
-
-    # fmt: off
-    rag_chain = (
-        RunnableParallel(
-            context=retriever_with_scores | guardrail.similarity_guardrail(settings.SIMILIARITY_THRESHOLD) | format_docs, 
-            question=RunnablePassthrough() )
-        | RunnableParallel(
-            answer=qa_prompt | llm,
-            question=itemgetter("question"),
-            context=itemgetter("context"),
-        )
-    )
-    # fmt: on
-
-    return rag_chain.invoke(question)
-
-
-def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
-    """RAG Chain with exception based on context similarity (stretch-vX)."""
+    Results in dictionary:
+    - evaluation - llm evaluation and rationale
+    - answer - llm generated response
+    - question - original query
+    - context - array of context docs & meta data
+    """
 
     # Structure definition for evaluation result:
     json_parser = JsonOutputParser(pydantic_object=LLMEvalResult)
 
-    # Evaluation prompt definition:
+    # Initial LLM generation prompt:
+    qa_prompt = PromptTemplate(
+        template=rag_prompt_llama_text, input_variables=["question", "context"]
+    )
+
+    # LLM-as-judge evaluation prompt:
     qa_eval_prompt_with_context = PromptTemplate(
         template=qa_eval_prompt_with_context_text,
         input_variables=["question", "answer", "context"],
@@ -289,23 +215,33 @@ def rag_chain_with_llm_context_self_evaluation(retriever, question, llm):
         },
     )
 
-    qa_prompt = hub.pull(settings.LLM_PROMPT)
-
+    # Chain assembly:
     # fmt: off
     rag_chain = (
+        # Context retrieval w/ Similarity GuardRail
         RunnableParallel(
-            context = retriever | format_docs, 
-            question = RunnablePassthrough() )
+            question = RunnablePassthrough(),
+            context = retriever_with_scores(VECTOR_STORE) | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD) | dedupulicate_contexts
+        )
+        | RunnableParallel (
+            context = format_docs,
+            docs = itemgetter("context"),
+            question = itemgetter("question")
+        )
+        # LLM response generation
         | RunnableParallel(
             answer= qa_prompt | llm, 
             question = itemgetter("question"), 
-            context = itemgetter("context") )
-        | RunnableParallel(
-            answer = itemgetter("answer"),
-            question = itemgetter("question"),
-            context = itemgetter("context"),
-            evaluation = qa_eval_prompt_with_context | llm | json_parser
+            context = itemgetter("context") ,
+            docs = itemgetter("docs")
         )
+        # LLM evaluation
+        #| RunnableParallel(
+        #    evaluation = qa_eval_prompt_with_context | llm | json_parser,
+        #    answer = itemgetter("answer"),
+        #    question = itemgetter("question"),
+        #    context = itemgetter("docs")
+        #)
     )
     # fmt: on
 
