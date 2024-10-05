@@ -15,11 +15,11 @@ def similarity_guardrail(threshold):
     @chain
     def exception_if_no_results(docs) -> List[Document]:
         filtered_docs = [
-            doc for doc in docs if doc.metadata["similarity_score"] > threshold
+            doc for doc in docs if doc.metadata["similarity_score"] < threshold
         ]
         if len(filtered_docs) <= 0:
             raise GuardRailException(
-                f"No contexts found at similarity threshold: {settings.SIMILIARITY_THRESHOLD}"
+                f"No contexts found at similarity threshold: {settings.SIMILARITY_THRESHOLD}"
             )
 
         return filtered_docs
