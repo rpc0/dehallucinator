@@ -1,10 +1,10 @@
 # debugpy
 langchain-community
 langchain-huggingface
+langchain-chroma
 langchain
 langchainhub
-# gpt4all
-chromadb
+chromadb-client
 requests
 beautifulsoup4
 unstructured
