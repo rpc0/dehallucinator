@@ -106,6 +106,7 @@ services:
       - LLM_MODEL_NAME=llm_model
     depends_on:
       - ollama
+      - chromadb
     networks:
       - frontend
       - backend
