@@ -7,8 +7,7 @@ import chromadb
 from langchain_community.document_loaders import DirectoryLoader
 from langchain_community.document_loaders import TextLoader
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_community.vectorstores import Chroma
-
+from langchain_chroma import Chroma
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_core.runnables import RunnablePassthrough, RunnableParallel
 from langchain_community.llms import Ollama
@@ -80,6 +79,7 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         collection = remote_chroma_client.get_collection(settings.CHROMA_DB_COLLECTION)
         DOCS_LOADED = collection.count()
         collection_exists = True
+        logger.info("Collection already exists.")
     except:
         logger.info("Collection does not exists, needs to be created.")
         remote_chroma_client.create_collection(name=settings.CHROMA_DB_COLLECTION)
@@ -87,6 +87,7 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     # Initialize embedding function:
     embedding_fxn = HuggingFaceEmbeddings(
         model_name=settings.EMBEDDING_MODEL,
+        # model_name="../data/model_cache",
         model_kwargs={"device": "cuda"},
         encode_kwargs={"normalize_embeddings": True},
     )
@@ -96,6 +97,7 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         embedding_function=embedding_fxn,
         client=remote_chroma_client,
     )
+    logger.info("Vector store created.")
 
     # If collection didn't exist, load documents and embeddings:
     if not collection_exists:
@@ -230,9 +232,8 @@ def rag_chain(question, llm):
         )
         # LLM response generation
         | RunnableParallel(
+            question = itemgetter("question"),
             answer= qa_prompt | llm, 
-            question = itemgetter("question"), 
-            context = itemgetter("context") ,
             docs = itemgetter("docs")
         )
         # LLM evaluation
