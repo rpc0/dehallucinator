@@ -24,6 +24,10 @@
         border-right: 1px solid black;
         padding: 20px; 
     }
+    .btn-primary, .btn-primary:hover, .btn-primary:active, .btn-primary:visited {
+        background-color: #6d2976 !important;
+        outline-color: #6d2976 !important;
+    }
 </style>
 {% endblock %}
 
@@ -39,9 +43,7 @@
 
     <button 
         type="button" 
-        class="btn btn-primary border-dark"
-        style="background-color: #6d2976;"
-        style="outline-color: #6d2976;"
+        class="btn btn-primary btn-purple border-dark"
         onclick="query()">
     Query
     </button>
