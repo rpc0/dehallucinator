@@ -35,7 +35,7 @@ function setTextAreaPlaceholder( textarea_id ) {
 function bar_color_select(color, d) {
   if (typeof d === "object") {
     // for data point
-    if (d.value > 100) {
+    if (d.value > 0.5) {
       return "#6d2976";
     } else {
       return "#404040";
