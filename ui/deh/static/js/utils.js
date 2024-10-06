@@ -45,11 +45,15 @@ function bar_color_select(color, d) {
 
 function create_context_score_chart( div_id, data ) {
   // https://stackoverflow.com/questions/77967689/rotated-barchart-in-a-billboard-js
+  
+  // Convert json response into data-col format:
   cnt = 0
   data_arr = []
   grp_arr = []
+  page_content = {}
   for (const doc of data.response.docs) {
     grp_arr.push(doc.metadata.source)
+    page_content[doc.metadata.source] = doc.page_content
     row = [doc.metadata.source]
     row = row.concat( Array.from({length: cnt++}).fill(null))
     row.push(doc.metadata.similarity_score)
@@ -61,7 +65,14 @@ function create_context_score_chart( div_id, data ) {
       columns: data_arr,
       type: "bar",
       groups: [grp_arr],
-      color: bar_color_select
+      color: bar_color_select,
+      onclick: function(d, i) {
+        $("#context-details").html(page_content[d.name])
+         },
+    },
+
+    tooltip: {
+      show: false
     },
     legend: {
       show: false
@@ -81,4 +92,23 @@ function create_context_score_chart( div_id, data ) {
 
 }
 
-  
+function create_donut_chart() {
+  let chart1 = bb.generate({
+    data: {
+        columns: [
+            ["Passed", 2],
+            ["Failed", 1],
+        ],
+        colors: {
+            Passed: "#6d2976",
+            Failed: "#404040"
+        },
+        type: "donut",
+    },
+    donut: {
+        title: "Passed 2 out of 3",
+    },
+    bindto: "#donut-chart",
+  });
+
+}
