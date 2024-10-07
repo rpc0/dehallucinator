@@ -10,7 +10,28 @@ x-build-args:
 
 services:
 
-  #https://github.com/valiantlynx/ollama-docker
+  # https://cookbook.chromadb.dev/running/running-chroma/#docker
+  chromadb:
+    container_name: chromadb
+    image: chromadb/chroma:0.5.11
+    volumes:
+      - ./chroma:/chroma/chroma
+    environment:
+      - IS_PERSISTENT=TRUE
+      - ANONYMIZED_TELEMETRY=FALSE
+    networks:
+      - backend
+    ports:
+      - 8000:8000
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  # https://github.com/valiantlynx/ollama-docker
   ollama:
     volumes:
       - ./ollama/ollama:/root/.ollama
@@ -85,6 +106,7 @@ services:
       - LLM_MODEL_NAME=llm_model
     depends_on:
       - ollama
+      - chromadb
     networks:
       - frontend
       - backend
@@ -111,7 +133,6 @@ services:
       - ollama-webui
 
 # Network Definitions
-
 networks:
   frontend:
     driver: bridge
@@ -119,7 +140,6 @@ networks:
     driver: bridge
 
 # Storage Volumes
-
 volumes:
   secret-vol:
     driver: local
