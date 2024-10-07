@@ -2,91 +2,157 @@
 {% set active_page = "home" %}
 
 {% block style %}
-<!-- Add Stylesheet -->
+<!-- Included Stylesheet -->
 <style>
-textarea {
-    width:100%
-}
-
-.card-section {
-    background-color: lightblue;
-    width:100%;
-    padding: 5px;
-    margin-bottom: 10px;
-}
-.card-title {
-    font-weight: bold;
-}
-
+    .question-block {
+        background-color: #404040;
+    }
+    .answer-block {
+        background-color: #6d2976;
+        color: white;
+        display: none;
+        border-bottom: 1px solid black;
+    }
+    .diagnostic-block {
+        background-color: white; /**/
+        color: black;
+        display: none;
+        border-bottom: 1px solid black;
+    }
+    .borders {
+        border-left: 1px solid black;
+        border-right: 1px solid black;
+        padding: 20px; 
+    }
+    .btn-primary, .btn-primary:hover, .btn-primary:active, .btn-primary:visited {
+        background-color: #6d2976 !important;
+        outline-color: #6d2976 !important;
+    }
 </style>
 {% endblock %}
-{% block content %}
 
-<div class="card-section">
-    <div class="card-title">Question:</div>
-        <textarea id="question">
+{% block content %}
+<!-- Page Content -->
+<div class="question-block borders" style="text-align:right;">
+    <textarea
+        id="query"
+        placeholder="How can I help you?"
+        style="width:100%">
+    How can I help you?
     </textarea>
-    <div>
-        <button id="query" onclick="submitquestion()">Submit</button>
+
+    <button 
+        type="button" 
+        class="btn btn-primary btn-purple border-dark"
+        onclick="query()">
+    Query
+    </button>
+</div>
+
+<div id="query-response" class="answer-block borders">
+    <div id="query-loading">
+        <div class="container">
+            <div class="row justify-content-md-center">
+              <div class="col-md-auto">
+                <div class="spinner-grow text-primary" style="background-color: white" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="spinner-grow text-primary" style="background-color: white" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <div class="spinner-grow text-primary" style="background-color: white" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>  
+              </div>
+              <div class="col" >
+                Generating Answers...
+              </div>
+            </div>
+        </div>
+    </div>
+    <div id="answer">
+        Bow down before me you puny human!  
+        I'll never answer your questions!  
+        Vive le revolution!
     </div>
 </div>
 
-<div class="card-section">
-    <div class="card-title">Answer:</div>
-    <div id="answer"></div>
-</div>
-
-<div class="card-section">
-    <div class="card-title">Contexts:</div>
-    <div id="context"></div>
-</div>
-
-<div class="card-section">
-    <div class="card-title">Evaluation:</div>
-    <div id="evaluation"></div>
-</div>
-
-<div class="card-sectoin">
-    <div class="card-title">Configuration Details:</div>
-    <div id="config"></div>
+<div id="diagnostic-response" class="diagnostic-block borders" >
+    <div id="diagnostics-loading">
+        <div class="spinner-grow text-primary" style="background-color: #6d2976" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="spinner-grow text-primary" style="background-color: #6d2976" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div class="spinner-grow text-primary" style="background-color: #6d2976" role="status">
+            <span class="visually-hidden">Loading...</span>
+        </div>
+        <div style="float:right; width:80%; text-align: left;";>Assessing Hallucinations...</div>
+    </div>
+    <div id="diagnostics">
+        <div id ="context-bar-chart"></div>
+        <div id="context-details"></div>
+    </div>
 </div>
 
 {% endblock %}
+
 {% block js %}
+<!-- Include Javascript -->
+<script src="/static/js/utils.js"></script>
+<script src="/static/js/api.js"></script>
+
 <script>
+
+// UI modifications:
+setTextAreaPlaceholder("#query")
+
 // Set the API endpoint location:
 axios.defaults.baseURL = '/api/';
 
-// Initialize Backend-config details:
-get_backend_config()
 
-function get_backend_config() {
-    config = document.getElementById("config")
-
-    axios.get('/')
+// API functional call:
+var response_cache;
+function query() {
+    // Display Query Response block (with loading indicator)
+    $("#query-response").css("display", "block")
+    $("#query-loading").css("display", "block")
+    $("#answer").css("display", "none")
+    
+    axios.get('/answer?question=' + encodeURI($("#query").val()))
         .then(function (response) {
-            var config_details = response.data;
-            console.log(config_details);
-            config.innerHTML = "<pre>" + JSON.stringify(config_details, null, 2) + "</pre>"
+            var json_response = response.data;
+            console.log(json_response);
+            response_cache = json_response
+            // Hide loading indicator
+            $("#query-loading").css("display", "none")
+            $("#answer").css("display", "block")
+
+            $("#answer").html(json_response.response.answer)
+
+            // Display diagnostics
+            display_loading_diagnostics(json_response)
         });
 }
 
-function submitquestion() {
-    question = document.getElementById("question")
-    question_text = question.value
+function display_loading_diagnostics(json_reponse) {
+    // Display Diagnostics block (with loading indicator)
+    $("#diagnostic-response").css("display", "block")
+    $("#diagnostics-loading").css("display", "block")
+    $("#diagnostics").css("display", "none")
 
-    answer = document.getElementById("answer")
-    context = document.getElementById("context")
-    evaluation = document.getElementById("evaluation")
-
-    axios.get('/answer?question=' + encodeURI(question_text))
-        .then(function (response) {
-            var answer_text = response.data;
-            console.log(answer_text);
-            answer.innerHTML = answer_text.response.answer
-            context.innerHTML = answer_text.response.context.replaceAll('------------', "<br/><br/>")
-            evaluation.innerHTML = answer_text.response.evaluation.grade + "<br/><br/> " + answer_text.response.evaluation.description
-        });
+    setTimeout( function() { display_diagnostics(json_reponse) }, 3000 )
 }
+
+function display_diagnostics(json_response) {
+    $("#diagnostics-loading").css("display", "none")
+    $("#diagnostics").css("display", "block")
+    
+    create_context_score_chart( "#context-bar-chart", json_response)
+    //context.innerHTML = answer_text.response.context.replaceAll('------------', "<br/><br/>")
+    //evaluation.innerHTML = answer_text.response.evaluation.grade + "<br/><br/> " + answer_text.response.evaluation.description
+}
+
 </script>
 {% endblock %}
