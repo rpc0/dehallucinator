@@ -43,7 +43,7 @@ class LLMEvalResult(BaseModel):
     )
 
 
-hyde_prompt = """
+hyde_prompt_text = """
 Imagine you are an expert writing a detailed explanation on the topic: '{question}'
     Your response should be comprehensive and include all key points that would be found in the top search result.
 """
