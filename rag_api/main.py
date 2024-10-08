@@ -27,7 +27,7 @@ from deh.prompts import (
     qa_eval_prompt_with_context_text,
     LLMEvalResult,
     rag_prompt_llama_text,
-    hyde_prompt,
+    hyde_prompt_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -209,6 +209,10 @@ def rag_chain(question, llm):
         template=rag_prompt_llama_text, input_variables=["question", "context"]
     )
 
+    hyde_prompt = PromptTemplate(
+        template=hyde_prompt_text, input_variables=["question"]
+    )
+
     # LLM-as-judge evaluation prompt:
     qa_eval_prompt_with_context = PromptTemplate(
         template=qa_eval_prompt_with_context_text,
@@ -221,9 +225,8 @@ def rag_chain(question, llm):
     # Chain assembly:
     # fmt: off
     rag_chain = ( 
-        {question : RunnablePassthrough() }
         # Hypothetical Document Embeddings (HyDE)
-        | {question : hyde_prompt | llm }
+        {"question" : hyde_prompt | llm }
         # Context retrieval w/ Similarity GuardRail
         | RunnableParallel(
             question = itemgetter("question"),
@@ -250,4 +253,4 @@ def rag_chain(question, llm):
     )
     # fmt: on
 
-    return rag_chain.invoke(question)
+    return rag_chain.invoke({"question": question})
