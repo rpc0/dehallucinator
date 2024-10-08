@@ -23,6 +23,13 @@ services:
       - backend
     ports:
       - 8000:8000
+    # https://github.com/chroma-core/chroma/issues/1449#issuecomment-1861233217
+    healthcheck:
+      test: curl localhost:8000/api/v1/heartbeat || exit 1
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 5s
     deploy:
       resources:
         reservations:
@@ -104,9 +111,12 @@ services:
       - "./rag_api:/app"  # Dev setting
     environment:
       - LLM_MODEL_NAME=llm_model
+    # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
-      - ollama
-      - chromadb
+      ollama:
+        condition: service_started
+      chromadb:
+        condition: service_healthy
     networks:
       - frontend
       - backend
