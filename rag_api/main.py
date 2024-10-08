@@ -18,6 +18,7 @@ from contextlib import asynccontextmanager
 from operator import itemgetter
 import logging
 from tqdm import tqdm
+import time
 
 import deh.settings as settings
 import deh.guardrail as guardrail
@@ -73,6 +74,13 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
 
     # Initialize remote connection to ChromaDB vector store:
     remote_chroma_client = chromadb.HttpClient(host=settings.CHROMA_DB_HOST, port=8000)
+    heartbeat_confirmation = None
+    while heartbeat_confirmation is not None:
+        try:
+            heartbeat_confirmation = remote_chroma_client.heartbeat()
+        except Exception as exc:
+            logger.error("ChromaDB heartbeat was not returned.  Waiting to try again.")
+            time.sleep(2.5)
 
     collection_exists = False
     try:
