@@ -91,7 +91,9 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         logger.info("Collection already exists.")
     except:
         logger.info("Collection does not exists, needs to be created.")
-        remote_chroma_client.create_collection(name=settings.CHROMA_DB_COLLECTION)
+        remote_chroma_client.create_collection(
+            name=settings.CHROMA_DB_COLLECTION, metadata={"hnsw:space": "cosine"}
+        )
 
     # Initialize embedding function:
     embedding_fxn = HuggingFaceEmbeddings(
