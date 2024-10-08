@@ -141,6 +141,7 @@ services:
     depends_on:
       - ui
       - ollama-webui
+      - api
 
 # Network Definitions
 networks:
