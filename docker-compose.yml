@@ -25,7 +25,7 @@ services:
       - 8000:8000
     # https://github.com/chroma-core/chroma/issues/1449#issuecomment-1861233217
     healthcheck:
-      test: ["curl localhost:8000/api/v1/heartbeat || exit 1"]
+      test: curl localhost:8000/api/v1/heartbeat || exit 1
       interval: 10s
       timeout: 10s
       retries: 5
