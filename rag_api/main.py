@@ -27,6 +27,7 @@ from deh.prompts import (
     qa_eval_prompt_with_context_text,
     LLMEvalResult,
     rag_prompt_llama_text,
+    hyde_prompt,
 )
 
 logger = logging.getLogger(__name__)
@@ -219,10 +220,13 @@ def rag_chain(question, llm):
 
     # Chain assembly:
     # fmt: off
-    rag_chain = (
+    rag_chain = ( 
+        {question : RunnablePassthrough() }
+        # Hypothetical Document Embeddings (HyDE)
+        | {question : hyde_prompt | llm }
         # Context retrieval w/ Similarity GuardRail
-        RunnableParallel(
-            question = RunnablePassthrough(),
+        | RunnableParallel(
+            question = itemgetter("question"),
             context = retriever_with_scores(VECTOR_STORE) | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD) | dedupulicate_contexts
         )
         | RunnableParallel (
