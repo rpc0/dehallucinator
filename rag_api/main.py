@@ -240,6 +240,23 @@ def rag_chain(question, llm):
             question = itemgetter("question"),
             context = retriever_with_scores(VECTOR_STORE) | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD) | dedupulicate_contexts
         )
+    )
+    # fmt: on
+
+    return rag_chain.invoke({"question": question})
+
+
+def holding(llm, question, hyde_prompt):
+    # Chain assembly:
+    # fmt: off
+    rag_chain = ( 
+        # Hypothetical Document Embeddings (HyDE)
+        {"question" : hyde_prompt | llm }
+        # Context retrieval w/ Similarity GuardRail
+        | RunnableParallel(
+            question = itemgetter("question"),
+            context = retriever_with_scores(VECTOR_STORE) | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD) | dedupulicate_contexts
+        )
         | RunnableParallel (
             context = format_docs,
             docs = itemgetter("context"),
@@ -260,5 +277,3 @@ def rag_chain(question, llm):
         #)
     )
     # fmt: on
-
-    return rag_chain.invoke({"question": question})
