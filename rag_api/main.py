@@ -37,8 +37,44 @@ logging.basicConfig(level=logging.INFO)  # logging.basicConfig(level=logging.DEB
 
 # Global Application variables
 VECTOR_STORE = None
+LLM = None
 TXT_SPLITTER = ""
 DOCS_LOADED = 0
+
+# General utility functions:
+
+
+def getLLM():
+    """Returns global LLM for the process."""
+    global LLM
+    if LLM is None:
+        LLM = Ollama(
+            base_url=settings.OLLAMA_HOST, model=settings.LLM_MODEL, verbose=True
+        )
+
+    return LLM
+
+
+def get_settings():
+    """JSON encoding of system settings."""
+    return {
+        # Model and Vector Store Params:
+        "llm_model": settings.LLM_MODEL,
+        "llm_prompt": settings.LLM_PROMPT,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "text_splitter": TXT_SPLITTER,
+        "text_chunk_size": settings.TXT_CHUNK_SIZE,
+        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
+        "context_similarity_threshold": settings.SIMILARITY_THRESHOLD,
+        "context_docs_retrieved": settings.CONTEXT_DOCUMENTS_RETRIEVED,
+        # Doc Count:
+        "docs_loaded": DOCS_LOADED,
+    }
+
+
+def api_response(response: str) -> str:
+    """Utility function to provide consistent API response structure."""
+    return {"response": response, "system_settings": get_settings()}
 
 
 @asynccontextmanager
@@ -50,19 +86,6 @@ async def lifespan(app: FastAPI):
     # Initialize vector store:
     initialize_vectorstore(settings.DATA_FOLDER, "**/*.context")
     yield
-
-
-# Create the FASTAPI App
-app = FastAPI(lifespan=lifespan)
-
-# Enable CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=False,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
@@ -144,21 +167,17 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         return DOCS_LOADED
 
 
-def get_settings():
-    """JSON encoding of system settings."""
-    return {
-        # Model and Vector Store Params:
-        "llm_model": settings.LLM_MODEL,
-        "llm_prompt": settings.LLM_PROMPT,
-        "embedding_model": settings.EMBEDDING_MODEL,
-        "text_splitter": TXT_SPLITTER,
-        "text_chunk_size": settings.TXT_CHUNK_SIZE,
-        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
-        "context_similarity_threshold": settings.SIMILARITY_THRESHOLD,
-        "context_docs_retrieved": settings.CONTEXT_DOCUMENTS_RETRIEVED,
-        # Doc Count:
-        "docs_loaded": DOCS_LOADED,
-    }
+# Create the FASTAPI App
+app = FastAPI(lifespan=lifespan)
+
+# Enable CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
@@ -167,23 +186,10 @@ async def root():
     return {"application": "DEH Application APIs", "system_settings": get_settings()}
 
 
-@app.get("/doc/load")
-async def load_model(doc_path: str, doc_filter: str):
-    """Re-initializes vector store with new document corpus."""
-
-    global VECTOR_STORE
-    vector_store = None
-    initialize_vectorstore(doc_path, doc_filter)
-
-    return {"status": "success", "doc_path": doc_path, "doc_count": DOCS_LOADED}
-
-
 @app.get("/answer")
 async def answer(question: str):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
-
-    llm = Ollama(base_url=settings.OLLAMA_HOST, model=settings.LLM_MODEL, verbose=True)
 
     try:
         response = rag_chain(question, llm)
@@ -197,6 +203,44 @@ async def answer(question: str):
         # System values used for measurement logging, etc:
         "system_settings": get_settings(),
     }
+
+
+@app.get("/hyde")
+async def hyde(q: str):
+    """Provides Hypothetical Document Embedding.
+    JSON response includes:
+    - question: The original question submitted
+    - hyde: The expanded hypothetical document (may contain hallucinations)
+    """
+    hyde_prompt = PromptTemplate(
+        template=hyde_prompt_text, input_variables=["question"]
+    )
+
+    hyde_chain = hyde_prompt | getLLM()
+
+    return api_response({"question": q, "hyde": hyde_chain.invoke({"question": q})})
+
+
+@app.get("/context_retrieval")
+async def context_retrieval(q: str, h: bool = False):
+    """Retrieves context documents from vector store."""
+
+    context_retrieval_chain = (
+        retriever_with_scores(VECTOR_STORE)
+        | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD)
+        | dedupulicate_contexts
+    )
+
+    hq = (await hyde(q))["response"]["hyde"] if h else q
+
+    return api_response(
+        {
+            "original_question": q,
+            "hyde": h,
+            "question": hq,
+            "context": context_retrieval_chain.invoke({"question": hq}),
+        }
+    )
 
 
 def rag_chain(question, llm):
