@@ -19,6 +19,7 @@ from operator import itemgetter
 import logging
 from tqdm import tqdm
 import time
+from functools import wraps
 
 import deh.settings as settings
 import deh.guardrail as guardrail
@@ -75,6 +76,21 @@ def get_settings():
 def api_response(response: str) -> str:
     """Utility function to provide consistent API response structure."""
     return {"response": response, "system_settings": get_settings()}
+
+
+def guardrail_api(api_endpoint):
+    """Decorator to catch GuardRail Exceptoins"""
+
+    @wraps(api_endpoint)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await api_endpoint(*args, **kwargs)
+        except guardrail.GuardRailException as gexc:
+            logger.info("GuardRailException: " + ",".join(gexc.args))
+            response = {"errors": gexc.args, "system_settings": get_settings()}
+            return response
+
+    return wrapper
 
 
 @asynccontextmanager
@@ -181,9 +197,17 @@ app.add_middleware(
 
 
 @app.get("/")
+@guardrail_api
 async def root():
     """Hello world default end-point for application key parameter visibilty."""
     return {"application": "DEH Application APIs", "system_settings": get_settings()}
+
+
+@app.get("/error")
+@guardrail_api
+async def error():
+    """Generates exception as part of error checking."""
+    raise guardrail.GuardRailException("Testing GuardRail exception.")
 
 
 @app.get("/answer")
@@ -208,6 +232,9 @@ async def answer(question: str):
 @app.get("/hyde")
 async def hyde(q: str):
     """Provides Hypothetical Document Embedding.
+    Params:
+    - q: the query to provide a Hypothetical document for
+
     JSON response includes:
     - question: The original question submitted
     - hyde: The expanded hypothetical document (may contain hallucinations)
@@ -223,7 +250,20 @@ async def hyde(q: str):
 
 @app.get("/context_retrieval")
 async def context_retrieval(q: str, h: bool = False):
-    """Retrieves context documents from vector store."""
+    """Retrieves context documents from vector store.
+    Params:
+    - q: the query to retrieve context for
+    - h: true/false rather to apply HYDE enhancement
+
+    JSON response includes:
+    - original_question: the initial query provided
+    - hyde: true/false if HYDE was applied
+    - question: original question or HYDE enhanced depending on if HYDE enabled
+    - context: array of context documents retrieved with following attributes
+        - metadata.source
+        - metadata.similarity_score
+        - page_content
+    """
 
     context_retrieval_chain = (
         retriever_with_scores(VECTOR_STORE)
@@ -231,6 +271,7 @@ async def context_retrieval(q: str, h: bool = False):
         | dedupulicate_contexts
     )
 
+    # Enhance with HYDE is specified:
     hq = (await hyde(q))["response"]["hyde"] if h else q
 
     return api_response(
