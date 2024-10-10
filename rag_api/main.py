@@ -316,7 +316,7 @@ async def evaluation(llm_response: RAGPrompt):
             "answer": llm_response.answer,
         }
     )
-    return api_response({"evalulation": eval_response})
+    return api_response({"evaluation": eval_response})
 
 
 @app.get("/answer")
