@@ -21,6 +21,7 @@ from tqdm import tqdm
 import time
 from functools import wraps
 from pydantic import BaseModel
+from typing import Optional
 
 import deh.settings as settings
 import deh.guardrail as guardrail
@@ -270,6 +271,7 @@ async def context_retrieval(q: str, h: bool = False):
 class RAGPrompt(BaseModel):
     question: str
     context: str
+    answer: Optional[str] = None
 
 
 @app.get("/llm")
@@ -289,53 +291,13 @@ async def llm(llm_prompt: RAGPrompt):
     return api_response({"answer": llm_response})
 
 
-@app.get("/answer")
+@app.put("/evalulate")
 @guardrail_api
-async def answer(q: str, h: bool = True, e: bool = True):
-    """Provides an LLM response based on query."""
-    # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
-
-    # Chain assembly:
-    # fmt: off
-
-    # Context Retrieval
-    context_response = (await context_retrieval(q,h))["response"]
-    prompt:RAGPrompt = RAGPrompt( question=q, context = format_docs(context_response) )
-    llm_response = (await llm(prompt))["response"]
-
-    return api_response(
-        {"answer": llm_response["answer"]}
-    )
-
-
-def rag_chain(q):
-    """RAG Chain implementation including:
-    - Context similarity guardrail
-    - LLM as judge evaluation
-
-    Results in dictionary:
-    - evaluation - llm evaluation and rationale
-    - answer - llm generated response
-    - question - original query
-    - context - array of context docs & meta data
-    """
-
-    pass
-
-
-def holding(llm, question, hyde_prompt):
+async def evaluation(llm_response: RAGPrompt):
+    """Evaluates the LLM response for accuracy."""
 
     # Structure definition for evaluation result:
     json_parser = JsonOutputParser(pydantic_object=LLMEvalResult)
-
-    # Initial LLM generation prompt:
-    qa_prompt = PromptTemplate(
-        template=rag_prompt_llama_text, input_variables=["question", "context"]
-    )
-
-    hyde_prompt = PromptTemplate(
-        template=hyde_prompt_text, input_variables=["question"]
-    )
 
     # LLM-as-judge evaluation prompt:
     qa_eval_prompt_with_context = PromptTemplate(
@@ -345,33 +307,46 @@ def holding(llm, question, hyde_prompt):
             "format_instructions": json_parser.get_format_instructions()
         },
     )
-    # Chain assembly:
+
+    evaluation = qa_eval_prompt_with_context | getLLM() | json_parser
+    eval_response = evaluation.invoke(
+        {
+            "question": llm_response.question,
+            "context": llm_response.context,
+            "answer": llm_response.answer,
+        }
+    )
+    return api_response({"evalulation": eval_response})
+
+
+@app.get("/answer")
+@guardrail_api
+async def answer(q: str, h: bool = True, e: bool = True):
+    """Provides an LLM response based on query."""
+    # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
+
+    # Context Retrieval
+    context_response = (await context_retrieval(q, h))["response"]
+
+    # LLM Response
+    prompt: RAGPrompt = RAGPrompt(question=q, context=format_docs(context_response))
+    llm_response = (await llm(prompt))["response"]
+
+    # LLM Evaluation
+    prompt.answer = llm_response["answer"]
+    if e:
+        evaluation_response = (await evaluation(prompt))["response"]
+    else:
+        evaluation_response = {"evaluation": {"grade": "", "description": ""}}
+
     # fmt: off
-    rag_chain = ( 
-        # Hypothetical Document Embeddings (HyDE)
-        {"question" : hyde_prompt | llm }
-        # Context retrieval w/ Similarity GuardRail
-        | RunnableParallel(
-            question = itemgetter("question"),
-            context = retriever_with_scores(VECTOR_STORE) | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD) | dedupulicate_contexts
-        )
-        | RunnableParallel (
-            context = format_docs,
-            docs = itemgetter("context"),
-            question = itemgetter("question")
-        )
-        # LLM response generation
-        | RunnableParallel(
-            question = itemgetter("question"),
-            answer= qa_prompt | llm, 
-            docs = itemgetter("docs")
-        )
-        # LLM evaluation
-        #| RunnableParallel(
-        #    evaluation = qa_eval_prompt_with_context | llm | json_parser,
-        #    answer = itemgetter("answer"),
-        #    question = itemgetter("question"),
-        #    context = itemgetter("docs")
-        #)
+    return api_response(
+        {
+            "question": q,
+            "hyde": h,
+            "answer": llm_response["answer"],
+            "context": context_response["context"],
+            "evaluation": evaluation_response["evaluation"]
+        }
     )
     # fmt: on
