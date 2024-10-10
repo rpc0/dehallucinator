@@ -19,6 +19,8 @@ from operator import itemgetter
 import logging
 from tqdm import tqdm
 import time
+from functools import wraps
+from pydantic import BaseModel
 
 import deh.settings as settings
 import deh.guardrail as guardrail
@@ -28,6 +30,7 @@ from deh.prompts import (
     qa_eval_prompt_with_context_text,
     LLMEvalResult,
     rag_prompt_llama_text,
+    hyde_prompt_text,
 )
 
 logger = logging.getLogger(__name__)
@@ -36,8 +39,59 @@ logging.basicConfig(level=logging.INFO)  # logging.basicConfig(level=logging.DEB
 
 # Global Application variables
 VECTOR_STORE = None
+LLM = None
 TXT_SPLITTER = ""
 DOCS_LOADED = 0
+
+# General utility functions:
+
+
+def getLLM():
+    """Returns global LLM for the process."""
+    global LLM
+    if LLM is None:
+        LLM = Ollama(
+            base_url=settings.OLLAMA_HOST, model=settings.LLM_MODEL, verbose=True
+        )
+
+    return LLM
+
+
+def get_settings():
+    """JSON encoding of system settings."""
+    return {
+        # Model and Vector Store Params:
+        "llm_model": settings.LLM_MODEL,
+        "llm_prompt": settings.LLM_PROMPT,
+        "embedding_model": settings.EMBEDDING_MODEL,
+        "text_splitter": TXT_SPLITTER,
+        "text_chunk_size": settings.TXT_CHUNK_SIZE,
+        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
+        "context_similarity_threshold": settings.SIMILARITY_THRESHOLD,
+        "context_docs_retrieved": settings.CONTEXT_DOCUMENTS_RETRIEVED,
+        # Doc Count:
+        "docs_loaded": DOCS_LOADED,
+    }
+
+
+def api_response(response: str) -> str:
+    """Utility function to provide consistent API response structure."""
+    return {"response": response, "system_settings": get_settings()}
+
+
+def guardrail_api(api_endpoint):
+    """Decorator to catch GuardRail Exceptoins"""
+
+    @wraps(api_endpoint)
+    async def wrapper(*args, **kwargs):
+        try:
+            return await api_endpoint(*args, **kwargs)
+        except guardrail.GuardRailException as gexc:
+            logger.info("GuardRailException: " + ",".join(gexc.args))
+            response = {"errors": gexc.args, "system_settings": get_settings()}
+            return response
+
+    return wrapper
 
 
 @asynccontextmanager
@@ -49,19 +103,6 @@ async def lifespan(app: FastAPI):
     # Initialize vector store:
     initialize_vectorstore(settings.DATA_FOLDER, "**/*.context")
     yield
-
-
-# Create the FASTAPI App
-app = FastAPI(lifespan=lifespan)
-
-# Enable CORSMiddleware
-app.add_middleware(
-    CORSMiddleware,
-    allow_credentials=False,
-    allow_origins=["*"],
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
 
 
 def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
@@ -143,62 +184,131 @@ def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         return DOCS_LOADED
 
 
-def get_settings():
-    """JSON encoding of system settings."""
-    return {
-        # Model and Vector Store Params:
-        "llm_model": settings.LLM_MODEL,
-        "llm_prompt": settings.LLM_PROMPT,
-        "embedding_model": settings.EMBEDDING_MODEL,
-        "text_splitter": TXT_SPLITTER,
-        "text_chunk_size": settings.TXT_CHUNK_SIZE,
-        "text_chunk_overlap": settings.TXT_CHUNK_OVERLAP,
-        "context_similarity_threshold": settings.SIMILARITY_THRESHOLD,
-        "context_docs_retrieved": settings.CONTEXT_DOCUMENTS_RETRIEVED,
-        # Doc Count:
-        "docs_loaded": DOCS_LOADED,
-    }
+# Create the FASTAPI App
+app = FastAPI(lifespan=lifespan)
+
+# Enable CORSMiddleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=False,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 @app.get("/")
+@guardrail_api
 async def root():
     """Hello world default end-point for application key parameter visibilty."""
     return {"application": "DEH Application APIs", "system_settings": get_settings()}
 
 
-@app.get("/doc/load")
-async def load_model(doc_path: str, doc_filter: str):
-    """Re-initializes vector store with new document corpus."""
+@app.get("/error")
+@guardrail_api
+async def error():
+    """Generates exception as part of error checking."""
+    raise guardrail.GuardRailException("Testing GuardRail exception.")
 
-    global VECTOR_STORE
-    vector_store = None
-    initialize_vectorstore(doc_path, doc_filter)
 
-    return {"status": "success", "doc_path": doc_path, "doc_count": DOCS_LOADED}
+@app.get("/hyde")
+async def hyde(q: str):
+    """Provides Hypothetical Document Embedding.
+    Params:
+    - q: the query to provide a Hypothetical document for
+
+    JSON response includes:
+    - question: The original question submitted
+    - hyde: The expanded hypothetical document (may contain hallucinations)
+    """
+    hyde_prompt = PromptTemplate(
+        template=hyde_prompt_text, input_variables=["question"]
+    )
+
+    hyde_chain = hyde_prompt | getLLM()
+
+    return api_response({"question": q, "hyde": hyde_chain.invoke({"question": q})})
+
+
+@app.get("/context_retrieval")
+@guardrail_api
+async def context_retrieval(q: str, h: bool = False):
+    """Retrieves context documents from vector store.
+    Params:
+    - q: the query to retrieve context for
+    - h: true/false rather to apply HYDE enhancement
+
+    JSON response includes:
+    - original_question: the initial query provided
+    - hyde: true/false if HYDE was applied
+    - question: original question or HYDE enhanced depending on if HYDE enabled
+    - context: array of context documents retrieved with following attributes
+        - metadata.source
+        - metadata.similarity_score
+        - page_content
+    """
+
+    context_retrieval_chain = (
+        retriever_with_scores(VECTOR_STORE)
+        | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD)
+        | dedupulicate_contexts
+    )
+
+    # Enhance with HYDE is specified:
+    hq = (await hyde(q))["response"]["hyde"] if h else q
+
+    return api_response(
+        {
+            "original_question": q,
+            "hyde": h,
+            "question": hq,
+            "context": context_retrieval_chain.invoke({"question": hq}),
+        }
+    )
+
+
+class RAGPrompt(BaseModel):
+    question: str
+    context: str
+
+
+@app.get("/llm")
+async def llm(llm_prompt: RAGPrompt):
+    """Retrieves response generated by LLM."""
+
+    q = llm_prompt.question
+    c = llm_prompt.context
+
+    # Initial LLM generation prompt:
+    qa_prompt = PromptTemplate(
+        template=rag_prompt_llama_text, input_variables=["question", "context"]
+    )
+
+    chain = qa_prompt | getLLM()
+    llm_response = chain.invoke({"question": q, "context": c})
+    return api_response({"answer": llm_response})
 
 
 @app.get("/answer")
-async def answer(question: str):
+@guardrail_api
+async def answer(q: str, h: bool = True, e: bool = True):
     """Provides an LLM response based on query."""
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
-    llm = Ollama(base_url=settings.OLLAMA_HOST, model=settings.LLM_MODEL, verbose=True)
+    # Chain assembly:
+    # fmt: off
 
-    try:
-        response = rag_chain(question, llm)
-    except guardrail.GuardRailException as exc:
-        logger.info("GuardRailException: " + ",".join(exc.args))
-        response = {"errors": exc.args, "system_settings": get_settings()}
+    # Context Retrieval
+    context_response = (await context_retrieval(q,h))["response"]
+    prompt:RAGPrompt = RAGPrompt( question=q, context = format_docs(context_response) )
+    llm_response = (await llm(prompt))["response"]
 
-    return {
-        # RAG chain response:
-        "response": response,
-        # System values used for measurement logging, etc:
-        "system_settings": get_settings(),
-    }
+    return api_response(
+        {"answer": llm_response["answer"]}
+    )
 
 
-def rag_chain(question, llm):
+def rag_chain(q):
     """RAG Chain implementation including:
     - Context similarity guardrail
     - LLM as judge evaluation
@@ -210,12 +320,21 @@ def rag_chain(question, llm):
     - context - array of context docs & meta data
     """
 
+    pass
+
+
+def holding(llm, question, hyde_prompt):
+
     # Structure definition for evaluation result:
     json_parser = JsonOutputParser(pydantic_object=LLMEvalResult)
 
     # Initial LLM generation prompt:
     qa_prompt = PromptTemplate(
         template=rag_prompt_llama_text, input_variables=["question", "context"]
+    )
+
+    hyde_prompt = PromptTemplate(
+        template=hyde_prompt_text, input_variables=["question"]
     )
 
     # LLM-as-judge evaluation prompt:
@@ -226,13 +345,14 @@ def rag_chain(question, llm):
             "format_instructions": json_parser.get_format_instructions()
         },
     )
-
     # Chain assembly:
     # fmt: off
-    rag_chain = (
+    rag_chain = ( 
+        # Hypothetical Document Embeddings (HyDE)
+        {"question" : hyde_prompt | llm }
         # Context retrieval w/ Similarity GuardRail
-        RunnableParallel(
-            question = RunnablePassthrough(),
+        | RunnableParallel(
+            question = itemgetter("question"),
             context = retriever_with_scores(VECTOR_STORE) | guardrail.similarity_guardrail(settings.SIMILARITY_THRESHOLD) | dedupulicate_contexts
         )
         | RunnableParallel (
@@ -255,5 +375,3 @@ def rag_chain(question, llm):
         #)
     )
     # fmt: on
-
-    return rag_chain.invoke(question)

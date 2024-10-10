@@ -18,11 +18,11 @@ def retriever_with_scores(vector_store):
     """Retrieve documents from vectorstore with similarity score."""
 
     @chain
-    def retrieved_docs(query: str) -> List[Document]:
+    def retrieved_docs(inputs: str) -> List[Document]:
         # https://python.langchain.com/docs/how_to/add_scores_retriever/
         docs, scores = zip(
             *vector_store.similarity_search_with_score(
-                query, k=settings.CONTEXT_DOCUMENTS_RETRIEVED
+                inputs["question"], k=settings.CONTEXT_DOCUMENTS_RETRIEVED
             )
         )
         for doc, score in zip(docs, scores):

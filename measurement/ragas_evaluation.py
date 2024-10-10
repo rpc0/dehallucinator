@@ -1,3 +1,5 @@
+# TODO: This is a legacy implementation.  Should be moved to use eval libraries/notebook.
+
 from deh.assessment import QASetRetriever
 from deh.assessment import ExperimentSet
 from deh import settings
@@ -144,12 +146,12 @@ if __name__ == "__main__":
             ds_exp, metrics=[answer_similarity], embeddings=embedding, llm=llm
         )
 
-        results.append( result )
+        results.append(result)
         print(f"Completed evaluation with total values of {result}.")
 
     # Save experiment results:
-    result_df = pd.concat( [result.to_pandas() for result in results] )
-    
+    result_df = pd.concat([result.to_pandas() for result in results])
+
     timestr = time.strftime("%Y%m%d-%H%M%S")
     path_to_evaluation = f"{args.evaluation_folder}/{timestr}.csv"
 
