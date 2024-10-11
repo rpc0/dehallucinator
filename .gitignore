@@ -165,3 +165,8 @@ data/
 secrets/
 ollama/
 chroma/
+cert.pem
+.terraform/
+*.tfstate
+.terraform.lock.hcl
+*.tfstate.backup
