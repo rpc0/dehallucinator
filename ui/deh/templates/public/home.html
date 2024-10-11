@@ -120,7 +120,7 @@ function query() {
     $("#query-loading").css("display", "block")
     $("#answer").css("display", "none")
     
-    axios.get('/answer?question=' + encodeURI($("#query").val()))
+    axios.get('/answer?h=false&e=true&q=' + encodeURI($("#query").val()))
         .then(function (response) {
             var json_response = response.data;
             console.log(json_response);
