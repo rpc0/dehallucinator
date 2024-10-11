@@ -51,7 +51,7 @@ function create_context_score_chart( div_id, data ) {
   data_arr = []
   grp_arr = []
   page_content = {}
-  for (const doc of data.response.docs) {
+  for (const doc of data.response.context) {
     grp_arr.push(doc.metadata.source)
     page_content[doc.metadata.source] = doc.page_content
     row = [doc.metadata.source]
