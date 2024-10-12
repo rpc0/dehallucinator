@@ -45,19 +45,20 @@ resource "aws_subnet" "dev_host_subnet" {
 resource "aws_security_group" "dev_host" {
   name   = "deh-dev-host"
   vpc_id = aws_vpc.default.id
-  ingress = [ {
+  ingress {
+    description = "SSH"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
-  },
-  {
-    from_port = 80
-    to_port = 80
-    protocol = "tcp"
+  }
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   }
-  ]
   egress {
     from_port   = 0
     to_port     = 0
@@ -97,7 +98,7 @@ resource "null_resource" "private_key_permissions" {
 
 resource "aws_instance" "dev_host" {
   ami                    = "ami-0866a3c8686eaeeba" # Ubuntu 24.04 LTS
-  instance_type          = "t2.micro"
+  instance_type          =  var.ec2_instance
   key_name               = aws_key_pair.private_key.key_name
   user_data = templatefile("dev.tftpl", {})
   vpc_security_group_ids = [aws_security_group.dev_host.id]

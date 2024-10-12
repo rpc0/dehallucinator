@@ -11,6 +11,12 @@ variable "az" {
     default = "us-east-1a"
 }
 
+variable "ec2_instance" {
+  description = "EC2 instance to provision for dev"
+  type = string
+  default = "c7i.2xlarge" # "t2.micro"
+}
+
 variable "global_prefix" {
   type    = string
   default = "deh"
