@@ -9,7 +9,7 @@ on:
 
 
 jobs:
-  deployment:
+  code-quality-check:
     runs-on: ubuntu-latest
     
     steps:
