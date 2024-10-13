@@ -35,6 +35,6 @@ Terraform modules can be run with the following commands:
 ## Login
 
 * ssh command...
-* git clone https://github.com/rpc0/dehallucinator.git
+* git clone [https://github.com/rpc0/dehallucinator.git](https://github.com/rpc0/dehallucinator.git)
 * cd dehallucinator
 * docker compose build
