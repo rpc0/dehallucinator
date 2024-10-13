@@ -326,7 +326,12 @@ async def answer(q: str, h: bool = True, e: bool = True):
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
     # Context Retrieval
-    context_response = (await context_retrieval(q, h))["response"]
+    try: 
+        context_response = (await context_retrieval(q, h))["response"]
+    except Exception as err:
+        logger.error(f"Error during context retrieval: {err}")
+        logger.error(await context_retrieval(q, h))
+        return api_response({"error": "Failed to retrieve any context"})
 
     # LLM Response
     prompt: RAGPrompt = RAGPrompt(question=q, context=format_docs(context_response))
