@@ -31,3 +31,10 @@ Terraform modules can be run with the following commands:
 `terraform apply` to execute modules and create cloud-based infrastructure
 
 `terraform destroy` to remove cloud-based infrastructure.
+
+## Login
+
+* ssh command...
+* git clone https://github.com/rpc0/dehallucinator.git
+* cd dehallucinator
+* docker compose build
