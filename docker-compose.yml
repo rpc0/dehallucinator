@@ -26,7 +26,7 @@ services:
     # https://github.com/chroma-core/chroma/issues/1449#issuecomment-1861233217
     healthcheck:
       test: curl localhost:8000/api/v1/heartbeat || exit 1
-      interval: 10s
+      interval: 60s
       timeout: 10s
       retries: 5
       start_period: 5s
@@ -55,13 +55,14 @@ services:
       - OLLAMA_FLASH_ATTENTION=1  # Enable flash attention
       - OLLAMA_TIMEOUT=90  # Set timeout to 1 minute and 30 seconds
       - OLLAMA_LLM_LIBRARY="cuda_v12" # Use CUDA for LLM
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_LOAD_TIMEOUT:480
     healthcheck:
-      #test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:11434/api/chat -d '{\"model\": \"llama3.1:8b-instruct-q3_K_L\"}' || exit 1"]
-      test: ["CMD", "ollama", "run", "llama3.1:8b-instruct-q3_K_L", ""]
-      interval: 30s
+      test: ["CMD", "ollama", "--version"]
+      interval: 60s
       timeout: 10s
-      retries: 5
-      start_period: 30s 
+      retries: 3
+      start_period: 15s
     networks:
       - backend
     deploy:
@@ -87,11 +88,20 @@ services:
       - WEBUI_AUTH=False
       - WEBUI_NAME=deh_ollama_web
       - WEBUI_SECRET_KEY=t0p-s3cr3t
+      - DEFAULT_MODELS=llama3.1:8b-instruct-q3_K_L # Preload llama3.1 model
+      - SHOW_ADMIN_DETAILS=True
     extra_hosts:
       - host.docker.internal:host-gateway
     restart: unless-stopped
     networks:
       - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
 
   ui:
     restart: always
@@ -122,7 +132,7 @@ services:
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
       ollama:
-        condition: service_started
+        condition: service_healthy
       chromadb:
         condition: service_healthy
     networks:
