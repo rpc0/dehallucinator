@@ -28,7 +28,7 @@ jobs:
       - name: Lint all Markdown files
         uses: DavidAnson/markdownlint-cli2-action@v17
         with:
-          config: '.github/workflows/config/markdownlint.yml'
+          config: '.github/workflows/config/.markdownlint.json'
           globs: '**/*.md'
         continue-on-error: true
 
