@@ -54,6 +54,14 @@ services:
       - OLLAMA_DEBUG=1
       - OLLAMA_FLASH_ATTENTION=1  # Enable flash attention
       - OLLAMA_TIMEOUT=90  # Set timeout to 1 minute and 30 seconds
+      - OLLAMA_LLM_LIBRARY="cuda_v12" # Use CUDA for LLM
+    healthcheck:
+      #test: ["CMD-SHELL", "curl -s -o /dev/null -w '%{http_code}' http://localhost:11434/api/chat -d '{\"model\": \"llama3.1:8b-instruct-q3_K_L\"}' || exit 1"]
+      test: ["CMD", "ollama", "run", "llama3.1:8b-instruct-q3_K_L", ""]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s 
     networks:
       - backend
     deploy:
