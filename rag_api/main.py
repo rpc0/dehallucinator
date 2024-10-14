@@ -1,3 +1,4 @@
+from httpx import request
 from fastapi import FastAPI
 
 from starlette.middleware.cors import CORSMiddleware
@@ -18,7 +19,7 @@ from contextlib import asynccontextmanager
 from operator import itemgetter
 import logging
 from tqdm import tqdm
-import time
+import time, requests, asyncio
 from functools import wraps
 from pydantic import BaseModel
 from typing import Optional
@@ -57,6 +58,17 @@ def getLLM():
 
     return LLM
 
+async def loadLLM():
+    """Load LLM model."""
+    global LLM
+    if LLM is None:
+        # Load the LLM onto the Ollama server
+        try:
+            response = await getLLM().apredict("Hello")
+            logger.info(f"LLM loaded onto Ollama server. Response: {response}")
+        except Exception as e:
+            logger.info(f"Failed to load model onto Ollama server. Error: {e}")
+    return None
 
 def get_settings():
     """JSON encoding of system settings."""
@@ -100,13 +112,14 @@ async def lifespan(app: FastAPI):
     """Responsible for managing start-up and shutdown.
     https://fastapi.tiangolo.com/advanced/events/#lifespan
     """
-
-    # Initialize vector store:
-    initialize_vectorstore(settings.DATA_FOLDER, "**/*.context")
+    await asyncio.gather(
+        loadLLM(), # Load LLM model
+        initialize_vectorstore(settings.DATA_FOLDER, "**/*.context") # Initialize vector store
+    )
     yield
 
 
-def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
+async def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
     """Initialize and cache vector store interface."""
 
     logger.info("Initializing vector store...")
@@ -326,7 +339,12 @@ async def answer(q: str, h: bool = True, e: bool = True):
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
     # Context Retrieval
-    context_response = (await context_retrieval(q, h))["response"]
+    try: 
+        context_response = (await context_retrieval(q, h))["response"]
+    except Exception as err:
+        logger.error(f"Error during context retrieval: {err}")
+        logger.error(await context_retrieval(q, h))
+        return api_response({"error": "Failed to retrieve any context"})
 
     # LLM Response
     prompt: RAGPrompt = RAGPrompt(question=q, context=format_docs(context_response))
