@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import random
 from typing import List, Optional
 from datasets import Dataset
+import json
 
 
 @dataclass
@@ -33,6 +34,13 @@ class QASet:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def to_json(self) -> str:
+        return {
+            "question": self.question,
+            "ground_truth": self.ground_truth,
+            "is_impossible": self.is_impossible,
+        }
 
 
 class ExperimentSet(QASet):
