@@ -52,8 +52,8 @@ function create_context_score_chart( div_id, data ) {
   grp_arr = []
   page_content = {}
   for (const doc of data.response.context) {
-    grp_arr.push(doc.metadata.source)
-    page_content[doc.metadata.source] = doc.page_content
+    grp_arr.push(doc.metadata.source) // context id
+    page_content[doc.metadata.source] = doc.page_content // context content
     row = [doc.metadata.source]
     row = row.concat( Array.from({length: cnt++}).fill(null))
     row.push(doc.metadata.similarity_score)
