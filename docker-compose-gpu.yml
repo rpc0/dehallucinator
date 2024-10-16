@@ -129,6 +129,7 @@ services:
       - "./rag_api:/app"  # Dev setting
     environment:
       - LLM_MODEL_NAME=llm_model
+      - GPU_ENABLED=true
     # https://docs.docker.com/compose/how-tos/startup-order/
     depends_on:
       ollama:

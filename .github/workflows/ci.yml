@@ -9,7 +9,7 @@ on:
 
 
 jobs:
-  deployment:
+  code-quality-check:
     runs-on: ubuntu-latest
     
     steps:
@@ -22,13 +22,13 @@ jobs:
       - name: Enable Python 3.10
         uses: actions/setup-python@v5.0.0
         with:
-          python-version: 3.10
+          python-version: '3.10'
 
       # Check Markdown
       - name: Lint all Markdown files
         uses: DavidAnson/markdownlint-cli2-action@v17
         with:
-          config: '.github/workflows/config/markdownlint.yml'
+          config: '.github/workflows/config/.markdownlint.json'
           globs: '**/*.md'
         continue-on-error: true
 

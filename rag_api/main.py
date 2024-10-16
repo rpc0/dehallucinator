@@ -58,6 +58,7 @@ def getLLM():
 
     return LLM
 
+
 async def loadLLM():
     """Load LLM model."""
     global LLM
@@ -70,10 +71,12 @@ async def loadLLM():
             logger.info(f"Failed to load model onto Ollama server. Error: {e}")
     return None
 
+
 def get_settings():
     """JSON encoding of system settings."""
     return {
         # Model and Vector Store Params:
+        "gpu_enabled": settings.GPU_ENABLED,
         "llm_model": settings.LLM_MODEL,
         "llm_prompt": settings.LLM_PROMPT,
         "embedding_model": settings.EMBEDDING_MODEL,
@@ -113,8 +116,10 @@ async def lifespan(app: FastAPI):
     https://fastapi.tiangolo.com/advanced/events/#lifespan
     """
     await asyncio.gather(
-        loadLLM(), # Load LLM model
-        initialize_vectorstore(settings.DATA_FOLDER, "**/*.context") # Initialize vector store
+        loadLLM(),  # Load LLM model
+        initialize_vectorstore(
+            settings.DATA_FOLDER, "**/*.context"
+        ),  # Initialize vector store
     )
     yield
 
@@ -149,11 +154,15 @@ async def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
             name=settings.CHROMA_DB_COLLECTION, metadata={"hnsw:space": "cosine"}
         )
 
+    model_kwargs = {}
+    if settings.GPU_ENABLED:
+        logger.info("GPU enabled.")
+        model_kwargs = {"device": "cuda"}
+
     # Initialize embedding function:
     embedding_fxn = HuggingFaceEmbeddings(
         model_name=settings.EMBEDDING_MODEL,
-        # model_name="../data/model_cache",
-        model_kwargs={"device": "cuda"},
+        model_kwargs=model_kwargs,
         encode_kwargs={"normalize_embeddings": True},
     )
 
@@ -339,7 +348,7 @@ async def answer(q: str, h: bool = True, e: bool = True):
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
     # Context Retrieval
-    try: 
+    try:
         context_response = (await context_retrieval(q, h))["response"]
     except Exception as err:
         logger.error(f"Error during context retrieval: {err}")
