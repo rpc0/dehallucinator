@@ -58,6 +58,7 @@ def getLLM():
 
     return LLM
 
+
 async def loadLLM():
     """Load LLM model."""
     global LLM
@@ -69,6 +70,7 @@ async def loadLLM():
         except Exception as e:
             logger.info(f"Failed to load model onto Ollama server. Error: {e}")
     return None
+
 
 def get_settings():
     """JSON encoding of system settings."""
@@ -113,8 +115,10 @@ async def lifespan(app: FastAPI):
     https://fastapi.tiangolo.com/advanced/events/#lifespan
     """
     await asyncio.gather(
-        loadLLM(), # Load LLM model
-        initialize_vectorstore(settings.DATA_FOLDER, "**/*.context") # Initialize vector store
+        loadLLM(),  # Load LLM model
+        initialize_vectorstore(
+            settings.DATA_FOLDER, "**/*.context"
+        ),  # Initialize vector store
     )
     yield
 
@@ -143,6 +147,14 @@ async def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         DOCS_LOADED = collection.count()
         collection_exists = True
         logger.info("Collection already exists.")
+
+        # GUARD-Statement: If collection is empty reload documents:
+        if DOCS_LOADED == 0:
+            collection_exists = False
+            logger.info(
+                f"Collection {settings.CHROMA_DB_COLLECTION} is empty so needs to be reloaded."
+            )
+
     except:
         logger.info("Collection does not exists, needs to be created.")
         remote_chroma_client.create_collection(
@@ -339,7 +351,7 @@ async def answer(q: str, h: bool = True, e: bool = True):
     # https://towardsdatascience.com/building-a-rag-chain-using-langchain-expression-language-lcel-3688260cad05
 
     # Context Retrieval
-    try: 
+    try:
         context_response = (await context_retrieval(q, h))["response"]
     except Exception as err:
         logger.error(f"Error during context retrieval: {err}")
