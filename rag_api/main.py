@@ -192,20 +192,22 @@ async def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
         DOCS_LOADED = len(data)
         logger.info(f"Loaded {DOCS_LOADED} documents")
 
-        # Split into chunks
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=settings.TXT_CHUNK_SIZE, chunk_overlap=settings.TXT_CHUNK_OVERLAP
-        )
+        if DOCS_LOADED > 0:
+            # Split into chunks
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=settings.TXT_CHUNK_SIZE,
+                chunk_overlap=settings.TXT_CHUNK_OVERLAP,
+            )
 
-        # Store text splitter class type for logging:
-        TXT_SPLITTER = text_splitter.__class__.__name__
+            # Store text splitter class type for logging:
+            TXT_SPLITTER = text_splitter.__class__.__name__
 
-        all_splits = text_splitter.split_documents(data)
-        logger.info(f"Split into {len(all_splits)} chunks")
+            all_splits = text_splitter.split_documents(data)
+            logger.info(f"Split into {len(all_splits)} chunks")
 
-        # Load documents:
-        # https://docs.trychroma.com/guides
-        VECTOR_STORE.add_documents(all_splits)
+            # Load documents:
+            # https://docs.trychroma.com/guides
+            VECTOR_STORE.add_documents(all_splits)
 
         return DOCS_LOADED
 
