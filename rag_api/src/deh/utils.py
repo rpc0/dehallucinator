@@ -20,11 +20,16 @@ def retriever_with_scores(vector_store):
     @chain
     def retrieved_docs(inputs: str) -> List[Document]:
         # https://python.langchain.com/docs/how_to/add_scores_retriever/
-        docs, scores = zip(
-            *vector_store.similarity_search_with_score(
-                inputs["question"], k=settings.CONTEXT_DOCUMENTS_RETRIEVED
-            )
+
+        search_results = vector_store.similarity_search_with_score(
+            inputs["question"], k=settings.CONTEXT_DOCUMENTS_RETRIEVED
         )
+
+        # GUARD-STATEMENT: No results
+        if len(search_results) == 0:
+            return []
+
+        docs, scores = zip(*search_results)
         for doc, score in zip(docs, scores):
             doc.metadata["similarity_score"] = score
 
