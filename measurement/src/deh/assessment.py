@@ -7,7 +7,6 @@ from dataclasses import dataclass
 import random
 from typing import List, Optional
 from datasets import Dataset
-import json
 
 
 @dataclass
