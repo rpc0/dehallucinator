@@ -5,6 +5,8 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+GPU_ENABLED: bool = os.environ.get("GPU_ENABLED", "true").lower() == "true"
+
 DATA_FOLDER = os.environ.get("DATA_FOLDER", "/data/contexts")
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://172.17.0.1:7869")
 CHROMA_DB_HOST = os.environ.get("CHROMA_DB_HOST", "chromadb")
@@ -19,8 +21,10 @@ EMBEDDING_MODEL = os.environ.get(
     "EMBEDDING_MODEL", "sentence-transformers/all-mpnet-base-v2"
 )
 
-SIMILARITY_THRESHOLD = float(os.environ.get("SIMILARITY_THRESHOLD", "1.0"))
-CONTEXT_DOCUMENTS_RETRIEVED = int(os.environ.get("CONTEXT_DOCUMENTS_RETRIEVED", "6"))
+SIMILARITY_THRESHOLD: float = float(os.environ.get("SIMILARITY_THRESHOLD", "1.0"))
+CONTEXT_DOCUMENTS_RETRIEVED: int = int(
+    os.environ.get("CONTEXT_DOCUMENTS_RETRIEVED", "6")
+)
 
-TXT_CHUNK_SIZE = int(os.environ.get("TXT_CHUNK_SIZE", "1500"))
-TXT_CHUNK_OVERLAP = int(os.environ.get("TXT_CHUNK_OVERLAP", "100"))
+TXT_CHUNK_SIZE: int = int(os.environ.get("TXT_CHUNK_SIZE", "1500"))
+TXT_CHUNK_OVERLAP: int = int(os.environ.get("TXT_CHUNK_OVERLAP", "100"))
