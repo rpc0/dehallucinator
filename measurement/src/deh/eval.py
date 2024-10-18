@@ -6,7 +6,6 @@ from typing import List
 from deh.assessment import QASet
 
 from deh import settings
-from itertools import count
 
 
 def get_config_params():
