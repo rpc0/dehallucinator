@@ -76,6 +76,7 @@ def get_settings():
     """JSON encoding of system settings."""
     return {
         # Model and Vector Store Params:
+        "gpu_enabled": settings.GPU_ENABLED,
         "llm_model": settings.LLM_MODEL,
         "llm_prompt": settings.LLM_PROMPT,
         "embedding_model": settings.EMBEDDING_MODEL,
@@ -161,11 +162,15 @@ async def initialize_vectorstore(doc_loc: str, doc_filter="**/*.*"):
             name=settings.CHROMA_DB_COLLECTION, metadata={"hnsw:space": "cosine"}
         )
 
+    model_kwargs = {}
+    if settings.GPU_ENABLED:
+        logger.info("GPU enabled.")
+        model_kwargs = {"device": "cuda"}
+
     # Initialize embedding function:
     embedding_fxn = HuggingFaceEmbeddings(
         model_name=settings.EMBEDDING_MODEL,
-        # model_name="../data/model_cache",
-        model_kwargs={"device": "cuda"},
+        model_kwargs=model_kwargs,
         encode_kwargs={"normalize_embeddings": True},
     )
 
