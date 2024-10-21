@@ -24,6 +24,10 @@ sudo usermod -aG docker ubuntu
 sudo systemctl start docker
 sudo systemctl enable docker
 
+# Nvidia Drivers
+sudo apt install -y ubuntu-drivers-common
+sudo ubuntu-drivers install
+
 # Install Nvidia Toolkit
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
   && curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
@@ -33,5 +37,5 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
 sudo apt-get install -y nvidia-container-toolkit
 
 # Clone Deh Project
-# cd /home/ubuntu
-# su - ubuntu -c "git clone https://github.com/rpc0/dehallucinator.git"
+# git clone https://github.com/rpc0/dehallucinator.git /home/ubuntu
+# chown -R ubuntu /home/ubuntu/dehallucinator

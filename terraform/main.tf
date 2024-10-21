@@ -18,8 +18,9 @@ resource "aws_internet_gateway" "default" {
 }
 
 resource "aws_eip" "default" {
-  depends_on = [aws_internet_gateway.default]
+  depends_on = [aws_internet_gateway.default, aws_instance.dev_host]
   domain     = "vpc"
+  instance   = aws_instance.dev_host.id
 }
 
 resource "aws_route" "default" {
@@ -97,7 +98,7 @@ resource "null_resource" "private_key_permissions" {
 ################################################################################
 
 resource "aws_instance" "dev_host" {
-  ami                    = "ami-0866a3c8686eaeeba" # Ubuntu 24.04 LTS
+  ami                    = "ami-0ea3c35c5c3284d82" # Ubuntu 24.04 LTS x86/HVM
   instance_type          =  var.ec2_instance
   key_name               = aws_key_pair.private_key.key_name
   user_data = templatefile("dev.tftpl", {})

@@ -38,5 +38,8 @@ Terraform modules can be run with the following commands:
 * git clone [https://github.com/rpc0/dehallucinator.git](https://github.com/rpc0/dehallucinator.git)
 * cd dehallucinator
 * docker compose build
-* download squad data
-* docker exec -it into ollama and pull model
+* deh_measure build (utils/build...)
+* download squad data (utils/dl...)
+* docker exec -it ollama bash
+* ollama pull llama3.1:8b-instruct-q3_K_L
+* ollama pull mxbai-embed-large:latest

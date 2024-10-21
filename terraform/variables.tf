@@ -2,19 +2,19 @@
 variable "region" {
   description = "region to use for AWS resources"
   type        = string
-  default     = "us-east-1"
+  default     = "us-east-2"
 }
 
 variable "az" {
     description = "availability zone for AWS resources"
     type = string
-    default = "us-east-1d"
+    default = "us-east-2c"
 }
 
 variable "ec2_instance" {
   description = "EC2 instance to provision for dev"
   type = string
-  default = "c7i.4xlarge" # "t2.micro"
+  default = "g4dn.2xlarge" # "c7i.4xlarge" # "t2.micro"
 }
 
 variable "global_prefix" {
