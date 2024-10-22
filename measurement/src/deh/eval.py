@@ -1,6 +1,7 @@
 import pandas as pd
 import requests
 import urllib.parse as parse
+import time
 
 from deh import settings
 
@@ -16,9 +17,13 @@ def generate_api_response(api_endpoint, **kwargs):
 
     # URLencode potential param values:
     kwargs = dict([(key, parse.quote(kwargs[key])) for key in kwargs])
-
+    time_start = time.time()
     response = requests.get(api_endpoint(**kwargs))
-    return response.json()
+    time_delta = time.time()-time_start
+    exec_time = time.strftime("%H:%M:%S", time.gmtime(time_delta))
+    response = response.json()
+    response["response"]["execution_time"] = exec_time
+    return response
 
 
 def generate_experiment_dataset(qa_set, fxn_parse_results, api_endpoint):
