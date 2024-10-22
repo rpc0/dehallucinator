@@ -45,8 +45,8 @@ class LLMEvalResult(BaseModel):
 
 hyde_prompts = [
     """
-Given a question, generate a paragraph of text that answers the question.    
-Question: {question}    
+Given a question, generate a paragraph of text that answers the question.
+Question: {question}
 Paragraph:
 """,
     """
