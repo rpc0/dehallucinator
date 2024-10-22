@@ -2,6 +2,9 @@ import pandas as pd
 import requests
 import urllib.parse as parse
 
+from typing import List
+from deh.assessment import QASet
+
 from deh import settings
 
 
@@ -21,7 +24,7 @@ def generate_api_response(api_endpoint, **kwargs):
     return response.json()
 
 
-def generate_experiment_dataset(qa_set, fxn_parse_results, api_endpoint):
+def generate_experiment_dataset(qa_set: List[QASet], fxn_parse_results, api_endpoint):
     """Execute API end-point calls and combine in DataFrame"""
 
     # Foreach Question, retrieve the LLM generated Answer:
@@ -32,7 +35,15 @@ def generate_experiment_dataset(qa_set, fxn_parse_results, api_endpoint):
         print(f"Processing {cnt} of {qa_set_cnt} question/answer pairs.")
         try:
             response = generate_api_response(api_endpoint, q=qa.question)
+
+            # Add qa reference measures:
+            response["reference"] = qa.to_json()
+
             df = fxn_parse_results(response)
+
+            # Generate a "group-by" reference id
+            df["reference_id"] = cnt
+
             if exp_df is None:
                 exp_df = df
             else:
