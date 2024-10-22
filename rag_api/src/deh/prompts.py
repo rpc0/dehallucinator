@@ -42,14 +42,15 @@ class LLMEvalResult(BaseModel):
         description="Explanation of why the specific grade was assigned. Must be concise. Not more than 2 sentences"
     )
 
+
 hyde_prompts = [
-"""
+    """
 Given a question, generate a paragraph of text that answers the question.    
 Question: {question}    
 Paragraph:
 """,
-"""
+    """
 Imagine you are an expert writing a detailed explanation on the topic: '{question}'
     Your response should be comprehensive and include all key points that would be found in the top search result.
-"""
+""",
 ]
