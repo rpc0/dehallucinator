@@ -32,7 +32,7 @@ from deh.prompts import (
     qa_eval_prompt_with_context_text,
     LLMEvalResult,
     rag_prompt_llama_text,
-    hyde_prompt_text,
+    hyde_prompts,
 )
 
 logger = logging.getLogger(__name__)
@@ -245,7 +245,7 @@ async def error():
 
 
 @app.get("/hyde")
-async def hyde(q: str):
+async def hyde(q: str, p:int = 0):
     """Provides Hypothetical Document Embedding.
     Params:
     - q: the query to provide a Hypothetical document for
@@ -254,6 +254,13 @@ async def hyde(q: str):
     - question: The original question submitted
     - hyde: The expanded hypothetical document (may contain hallucinations)
     """
+    ## GUARD STATEMENT:
+    if p > len(hyde_prompts)-1:
+        logger.warn(f"Attempted to use invalid HYDE Prompt {p}.  Defaulted to 0.")
+        p = 0
+
+    hyde_prompt_text = hyde_prompts[p]
+
     hyde_prompt = PromptTemplate(
         template=hyde_prompt_text, input_variables=["question"]
     )
