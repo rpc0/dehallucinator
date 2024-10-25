@@ -260,6 +260,8 @@ An evaluation file should have a CSV structure simliar to the below.
 
 * answer_similiarity - the cosine similarity of answer and ground truth embeddings
 
+**TODO:** Add more information on output measures.
+
 *RAG and Assessment Hyper-Parameter elements:*
 
 * llm_model - LLM model used in RAG API response generation
