@@ -44,7 +44,7 @@ Terraform modules can be run with the following commands:
 * ollama pull llama3.1:8b-instruct-q3_K_L
 * ollama pull mxbai-embed-large:latest
 
-## WSL
+## VS Code
 
 * Remote SSH connection
 * Windows change permissions on cert.pem file (remove inheritance)
@@ -58,8 +58,8 @@ source ~/miniconda3/bin/activate
 
 conda init --all
 
-
 ## Error response from daemon: could not select device driver "nvidia" with capabilities: [[gpu]]
+
 makes sure nvidia toolkit installed
 
 sudo systemctl daemon-reload
