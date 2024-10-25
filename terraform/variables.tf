@@ -11,10 +11,28 @@ variable "az" {
     default = "us-east-2a"
 }
 
-variable "ec2_instance" {
-  description = "EC2 instance to provision for dev"
+variable "ami" {
+  description = "Ubuntu 24.04 LTS x86/HVM"
   type = string
-  default = "p3.2xlarge" # "g4dn.2xlarge" # "c7i.4xlarge" # "t2.micro"
+  default = "ami-0ea3c35c5c3284d82"
+}
+
+variable "test_ec2_instance" {
+  description = "Micro EC2 instance to provision for testing"
+  type = string
+  default = "t2.micro"
+}
+
+variable "premium_ec2_instance" {
+  description = "P3 EC2 instance to provision for premium dev"
+  type = string
+  default = "p3.2xlarge"
+}
+
+variable "dev_ec2_instance" {
+  description = "G EC2 instance to provision for dev"
+  type = string
+  default = "g4dn.2xlarge" # "c7i.4xlarge"
 }
 
 variable "global_prefix" {

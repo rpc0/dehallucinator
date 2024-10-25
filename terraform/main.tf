@@ -17,12 +17,6 @@ resource "aws_internet_gateway" "default" {
   }
 }
 
-resource "aws_eip" "default" {
-  depends_on = [aws_internet_gateway.default, aws_instance.dev_host]
-  domain     = "vpc"
-  instance   = aws_instance.dev_host.id
-}
-
 resource "aws_route" "default" {
   route_table_id         = aws_vpc.default.main_route_table_id
   destination_cidr_block = "0.0.0.0/0"
@@ -94,21 +88,123 @@ resource "null_resource" "private_key_permissions" {
 
 
 ################################################################################
-# Client Machine (EC2)
+# Client Machines - Test
 ################################################################################
 
-resource "aws_instance" "dev_host" {
-  ami                    = "ami-0ea3c35c5c3284d82" # Ubuntu 24.04 LTS x86/HVM
-  instance_type          =  var.ec2_instance
+resource "aws_instance" "test_dev_host" {
+  ami                    = var.ami
+  instance_type          = var.test_ec2_instance
   key_name               = aws_key_pair.private_key.key_name
-  user_data = templatefile("dev.tftpl", {})
+  user_data              = templatefile("deh_ec2.tftpl", {})
   vpc_security_group_ids = [aws_security_group.dev_host.id]
   subnet_id              = aws_subnet.dev_host_subnet.id
   tags = {
-    Name = "deh_dev_ec2"
+    Name = "deh_test_ec2"
+  } 
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 25
+  }
+}
+
+resource "aws_eip" "eip_test" {
+  depends_on = [aws_internet_gateway.default, aws_instance.test_dev_host]
+  domain     = "vpc"
+  instance   = aws_instance.test_dev_host.id
+}
+
+################################################################################
+# Client Machines - Dev
+################################################################################
+
+resource "aws_instance" "deh_ckh_host" {
+  ami                    = var.ami
+  instance_type          = var.dev_ec2_instance
+  key_name               = aws_key_pair.private_key.key_name
+  user_data              = templatefile("deh_ec2.tftpl", {})
+  vpc_security_group_ids = [aws_security_group.dev_host.id]
+  subnet_id              = aws_subnet.dev_host_subnet.id
+  tags = {
+    Name = "deh_ckh_dev"
   } 
   root_block_device {
     volume_type = "gp2"
     volume_size = 100
   }
+}
+
+resource "aws_eip" "eip_deh_ckh_dev" {
+  depends_on = [aws_internet_gateway.default, aws_instance.deh_ckh_host]
+  domain     = "vpc"
+  instance   = aws_instance.deh_ckh_host.id
+}
+
+resource "aws_instance" "deh_gb_host" {
+  ami                    = var.ami
+  instance_type          = var.dev_ec2_instance
+  key_name               = aws_key_pair.private_key.key_name
+  user_data              = templatefile("deh_ec2.tftpl", {})
+  vpc_security_group_ids = [aws_security_group.dev_host.id]
+  subnet_id              = aws_subnet.dev_host_subnet.id
+  tags = {
+    Name = "deh_gb_dev"
+  } 
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 100
+  }
+}
+
+resource "aws_eip" "eip_deh_gb_dev" {
+  depends_on = [aws_internet_gateway.default, aws_instance.deh_gb_host]
+  domain     = "vpc"
+  instance   = aws_instance.deh_gb_host.id
+}
+
+################################################################################
+# Client Machines - Premium
+################################################################################
+
+resource "aws_instance" "deh_ckh_prem_host" {
+  ami                    = var.ami
+  instance_type          = var.premium_ec2_instance
+  key_name               = aws_key_pair.private_key.key_name
+  user_data              = templatefile("deh_ec2.tftpl", {})
+  vpc_security_group_ids = [aws_security_group.dev_host.id]
+  subnet_id              = aws_subnet.dev_host_subnet.id
+  tags = {
+    Name = "deh_ckh_premium"
+  } 
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 100
+  }
+}
+
+resource "aws_eip" "eip_deh_ckh_prem" {
+  depends_on = [aws_internet_gateway.default, aws_instance.deh_ckh_prem_host]
+  domain     = "vpc"
+  instance   = aws_instance.deh_ckh_prem_host.id
+}
+
+resource "aws_instance" "deh_gb_prem_host" {
+  ami                    = var.ami
+  instance_type          = var.premium_ec2_instance
+  key_name               = aws_key_pair.private_key.key_name
+  user_data              = templatefile("deh_ec2.tftpl", {})
+  vpc_security_group_ids = [aws_security_group.dev_host.id]
+  subnet_id              = aws_subnet.dev_host_subnet.id
+  tags = {
+    Name = "deh_gb_premium"
+  } 
+  root_block_device {
+    volume_type = "gp2"
+    volume_size = 100
+  }
+}
+
+resource "aws_eip" "eip_deh_gb_prem" {
+  depends_on = [aws_internet_gateway.default, aws_instance.deh_gb_prem_host]
+  domain     = "vpc"
+  instance   = aws_instance.deh_gb_prem_host.id
 }
