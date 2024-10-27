@@ -272,11 +272,12 @@ async def hyde(q: str, p:int = 0):
 
 @app.get("/context_retrieval")
 @guardrail_api
-async def context_retrieval(q: str, h: bool = False):
+async def context_retrieval(q: str, h: bool = False, p: int = 0):
     """Retrieves context documents from vector store.
     Params:
     - q: the query to retrieve context for
     - h: true/false rather to apply HYDE enhancement
+    - p: the prompt index for HYDE enhancement
 
     JSON response includes:
     - original_question: the initial query provided
@@ -295,7 +296,7 @@ async def context_retrieval(q: str, h: bool = False):
     )
 
     # Enhance with HYDE is specified:
-    hq = (await hyde(q))["response"]["hyde"] if h else q
+    hq = (await hyde(q, p))["response"]["hyde"] if h else q
 
     return api_response(
         {
