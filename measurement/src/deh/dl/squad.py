@@ -10,6 +10,8 @@ from deh.assessment import QASet
 from deh.dl import AssessmentDataDownloader
 from typing import Optional
 
+import pandas as pd
+
 
 class SquadAssessmentDataDownloader(AssessmentDataDownloader):
     """Specific implementation of DataDownload for SQuAD2.0 dataset."""
@@ -17,10 +19,67 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
     DEV = "https://rajpurkar.github.io/SQuAD-explorer/dataset/dev-v2.0.json"
     FULL = "https://rajpurkar.github.io/SQuAD-explorer/dataset/train-v2.0.json"
 
+    def parse_json_file(self, json_data, limit_size: Optional[int]) -> pd.DataFrame:
+        """Parses the SQuAD JSON file and returns a normalized df."""
+
+        # Normalize data-structure:
+        df_table = pd.json_normalize(
+            json_data["data"],
+            record_path=["paragraphs", "qas", "answers"],
+            meta=[
+                "title",
+                ["paragraphs", "context"],
+                ["paragraphs", "qas", "question"],
+                ["paragraphs", "qas", "is_impossible"],
+            ],
+        )
+
+        # Rename and Select Key Columns:
+        selector = {
+            "text": "answer",
+            "paragraphs.context": "context",
+            "paragraphs.qas.question": "question",
+            "paragraphs.qas.is_impossible": "is_impossible",
+        }
+        df_table = df_table.rename(columns=selector)[[*selector.values()]]
+
+        # Handle impossible question structure:
+        impossible_df = pd.json_normalize(
+            json_data["data"],
+            record_path=[
+                "paragraphs",
+                "qas",
+            ],
+            meta=[
+                "title",
+                ["paragraphs", "context"],
+            ],
+        )
+
+        impossible_df["answer"] = ""
+        rename = {"paragraphs.context": "context"}
+        impossible_df = impossible_df.rename(columns=rename)[
+            ["question", "answer", "context", "is_impossible"]
+        ]
+
+        impossible_df = impossible_df[impossible_df["is_impossible"] == True]
+        df_table = pd.concat([df_table, impossible_df], ignore_index=True)
+
+        # Create unique context id:
+        df_table["context_id"] = df_table.groupby(["context"]).ngroup()
+
+        # De-duplicate rows:
+        de_dupe_df = df_table.drop_duplicates()
+
+        # Optional size limit:
+        if limit_size:
+            de_dupe_df = de_dupe_df[0:limit_size]
+
+        return de_dupe_df
+
     def __init__(
         self,
         dl_url: str = DEV,
-        filter_impossible=True,
         cache_dir: str = None,
         limit_size: Optional[int] = None,
     ) -> None:
@@ -56,28 +115,23 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
                 with open(cache_file_path, "w+") as f:
                     json.dump(json_data, f)
 
-        # Collect all of the context documents:
-        contexts = jmespath.search("data[*].paragraphs[*].context[]", json_data)
-        self._contexts = contexts
+        # Normalized dataframe:
+        df = self.parse_json_file(json_data, limit_size=limit_size)
+        self._df = df
 
-        # Collect question-answer pairs:
-        filter_str = "?is_impossible!=True" if filter_impossible else "*"
-        possible_qas = jmespath.search(
-            f"data[*].paragraphs[*].qas[{filter_str}][]", json_data
+        # Contexts (context_id, context)
+        self._contexts_df = df.groupby("context_id", as_index=False).agg(
+            context=("context", "first"),
         )
 
-        # Optional size limit:
-        if limit_size:
-            self._contexts = self._contexts[0:limit_size]
-            possible_qas = possible_qas[0:limit_size]
-
+        # Iterate, create qaset
         self._qaset = []
-        for qas in possible_qas:
-            for qa in qas:
-                question = qa["question"]
-                answers = set([a["text"] for a in qa["answers"]])
-                for answer in answers:
-                    self._qaset.append(QASet(question, answer, False))
+        for index, row in df.iterrows():
+            question = row["question"]
+            answer = row["answer"]
+            possible = row["is_impossible"]
+            context_id = row["context_id"]
+            self._qaset.append(QASet(question, answer, possible, context_id))
 
 
 def download_squad_qa_dataset(
