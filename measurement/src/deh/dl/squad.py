@@ -1,5 +1,4 @@
 import os
-import jmespath
 import json
 
 import requests
@@ -62,7 +61,9 @@ class SquadAssessmentDataDownloader(AssessmentDataDownloader):
             ["question", "answer", "context", "is_impossible"]
         ]
 
-        impossible_df = impossible_df[impossible_df["is_impossible"] == True]
+        impossible_df = impossible_df[
+            impossible_df["is_impossible"] == True
+        ]  # noqa: E712
         df_table = pd.concat([df_table, impossible_df], ignore_index=True)
 
         # Create unique context id:

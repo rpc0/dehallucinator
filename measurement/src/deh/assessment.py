@@ -32,7 +32,7 @@ class QASet:
         self.ref_context_id = ref_context_id
 
     def __str__(self) -> str:
-        return f"question: {self.question}, ground_truth: {self.ground_truth}, is_impossible: {self.is_impossible}, ref_context_id: {self.ref_context_id}"
+        return self.to_json()
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -113,9 +113,9 @@ class QASetRetriever:
         ]
 
         if qa_type == QASetType.IMPOSSIBLE_ONLY:
-            qasets = [qa for qa in qasets if qa.is_impossible == True]
+            qasets = [qa for qa in qasets if qa.is_impossible is True]
 
         if qa_type == QASetType.POSSIBLE_ONLY:
-            qasets = [qa for qa in qasets if qa.is_impossible == False]
+            qasets = [qa for qa in qasets if qa.is_impossible is False]
 
         return random.sample(qasets, k=sample_size) if sample_size else qasets
