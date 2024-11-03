@@ -1,3 +1,6 @@
 ragas
 jmespath
 python-dotenv
+matplotlib
+plotly
+re
