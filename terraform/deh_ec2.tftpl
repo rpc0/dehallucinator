@@ -1,12 +1,12 @@
 #!/bin/bash
 
-# Update
 sudo apt-get update
 
 # Install Python
 sudo apt install -y python3 python3-dev python3-pip python3-virtualenv python3-venv
+sudo echo "Python installation completed." >> /deh_ec2_setup.txt
 
-# Install and Configure Docker
+# Install Docker, Compose Plugin, Buildx Plugin
 sudo apt-get install ca-certificates curl
 sudo install -m 0755 -d /etc/apt/keyrings
 sudo curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
@@ -16,6 +16,7 @@ echo \
   "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/ubuntu \
   $(. /etc/os-release && echo "$VERSION_CODENAME") stable" | \
   sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
 sudo apt-get update
 
 sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
@@ -23,6 +24,12 @@ sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plug
 sudo usermod -aG docker ubuntu
 sudo systemctl start docker
 sudo systemctl enable docker
+sudo echo "Docker installation completed." >> /deh_ec2_setup.txt
+
+# Install Nvidia Drivers
+sudo apt install -y ubuntu-drivers-common
+sudo ubuntu-drivers install
+sudo echo "Nvidia drivers installation completed." >> /deh_ec2_setup.txt
 
 # Install Nvidia Toolkit
 curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg \
@@ -30,8 +37,21 @@ curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dear
     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
 
+sudo apt-get update
+
 sudo apt-get install -y nvidia-container-toolkit
 
-# Clone Deh Project
-# cd /home/ubuntu
-# su - ubuntu -c "git clone https://github.com/rpc0/dehallucinator.git"
+sudo systemctl daemon-reload
+sudo systemctl restart docker
+sudo echo "Nvidia container toolkit installation completed." >> /deh_ec2_setup.txt
+
+# Install Miniconda
+sudo mkdir -p /home/ubuntu/miniconda3
+sudo wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /home/ubuntu/miniconda3/miniconda.sh
+sudo bash /home/ubuntu/miniconda3/miniconda.sh -b -u -p /home/ubuntu/miniconda3
+sudo rm /home/ubuntu/miniconda3/miniconda.sh
+sudo source /home/ubuntu/miniconda3/bin/activate
+sudo conda init --all
+
+sudo chown -R ubuntu /home/ubuntu/miniconda3
+sudo echo "Miniconda installation completed." >> /deh_ec2_setup.txt
