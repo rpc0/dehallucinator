@@ -123,8 +123,9 @@ services:
       - OLLAMA_FLASH_ATTENTION=1  # Enable flash attention
       - OLLAMA_TIMEOUT=90  # Set timeout to 1 minute and 30 seconds
       - OLLAMA_LLM_LIBRARY="cuda_v12" # Use CUDA for LLM
-      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_MAX_LOADED_MODELS=1
       - OLLAMA_LOAD_TIMEOUT:480
+      - OLLAMA_NUM_PARALLEL=32
     healthcheck:
       test: ["CMD", "ollama", "--version"]
       interval: 60s
