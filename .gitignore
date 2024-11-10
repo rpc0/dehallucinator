@@ -170,5 +170,5 @@ cert.pem
 *.tfstate
 .terraform.lock.hcl
 *.tfstate.backup
-milvus/
 bin/
+milvus/
