@@ -1,0 +1,229 @@
+#version: "3.6"
+
+# Using Docker_BuildKit which requires:
+# export DOCKER_BUILDKIT=1
+# export COMPOSE_DOCKER_CLI_BUILD=1
+
+x-build-args:
+  &build_args
+  INSTALL_PYTHON_VERSION: 3.9
+
+services:
+  # https://milvus.io/docs/install_standalone-docker-compose-gpu.md
+  etcd:
+    container_name: milvus-etcd
+    image: quay.io/coreos/etcd:v3.5.5
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - ./milvus/etcd:/etcd
+    networks:
+      - backend
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  minio:
+    container_name: milvus-minio
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    ports:
+      - "9001:9001"
+      - "9000:9000"
+    volumes:
+      - ./milvus/minio:/minio_data
+    networks:
+      - backend
+    command: minio server /minio_data --console-address ":9001"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  standalone:
+    container_name: milvus-standalone
+    image: milvusdb/milvus:v2.4.13-gpu
+    command: ["milvus", "run", "standalone"]
+    security_opt:
+    - seccomp:unconfined
+    environment:
+      ETCD_ENDPOINTS: etcd:2379
+      MINIO_ADDRESS: minio:9000
+    volumes:
+      - ./milvus/milvus:/var/lib/milvus
+    networks:
+      - backend
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              capabilities: ["gpu"]
+              device_ids: ["0"]
+    depends_on:
+      - "etcd"
+      - "minio"
+
+  # https://github.com/valiantlynx/ollama-docker
+  ollama:
+    volumes:
+      - ./ollama/ollama:/root/.ollama
+    container_name: ollama
+    pull_policy: always
+    tty: true
+    restart: unless-stopped
+    image: ollama/ollama:latest
+    ports:
+      - 7869:11434
+    environment:
+      - OLLAMA_KEEP_ALIVE=24h
+      - OLLAMA_DEBUG=1
+      - OLLAMA_FLASH_ATTENTION=1  # Enable flash attention
+      - OLLAMA_TIMEOUT=90  # Set timeout to 1 minute and 30 seconds
+      - OLLAMA_LLM_LIBRARY="cuda_v12" # Use CUDA for LLM
+      - OLLAMA_MAX_LOADED_MODELS=2
+      - OLLAMA_LOAD_TIMEOUT:480
+    healthcheck:
+      test: ["CMD", "ollama", "--version"]
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
+    networks:
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  ollama-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ollama_webui
+    volumes:
+      - ./ollama/ollama-webui:/app/backend/data
+    depends_on:
+      - ollama
+    ports:
+      - 8080:8080
+    environment: # https://docs.openwebui.com/getting-started/env-configuration#default_models
+      - OLLAMA_BASE_URLS=http://host.docker.internal:7869 #comma separated ollama hosts
+      - ENV=dev
+      - WEBUI_AUTH=False
+      - WEBUI_NAME=deh_ollama_web
+      - WEBUI_SECRET_KEY=t0p-s3cr3t
+      - DEFAULT_MODELS=llama3.1:8b-instruct-q3_K_L # Preload llama3.1 model
+      - SHOW_ADMIN_DETAILS=True
+    extra_hosts:
+      - host.docker.internal:host-gateway
+    restart: unless-stopped
+    networks:
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  ui:
+    restart: always
+    build: ui
+    image: deh_ui
+    container_name: deh_ui
+    environment:
+      - FLASK_ENV=development # Dev setting
+    expose:
+      - "8080"
+    volumes:
+      - "./ui:/app"  # Dev setting
+    networks:
+      - frontend
+
+  api:
+    restart: always
+    build: rag_api
+    image: deh_rag_api
+    container_name: deh_rag_api
+    expose:
+      - "8080"
+    volumes:
+      - data-vol:/data
+      - "./rag_api:/app"  # Dev setting
+    environment:
+      - LLM_MODEL_NAME=llm_model
+    # https://docs.docker.com/compose/how-tos/startup-order/
+    depends_on:
+      ollama:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+    networks:
+      - frontend
+      - backend
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+
+  nginx:
+    container_name: deh_nginx
+    image: nginx:stable
+    ports:
+      - "80:80"
+    volumes:
+      - "./conf/nginx/nginx.conf:/etc/nginx/nginx.conf"
+    networks:
+      - frontend
+      - backend
+    depends_on:
+      - ui
+      - ollama-webui
+      - api
+
+# Network Definitions
+networks:
+  frontend:
+    driver: bridge
+  backend:
+    driver: bridge
+
+# Storage Volumes
+volumes:
+  secret-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./secrets
+  data-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data
+  db-vol: null
+  milvus-vol:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./milvus

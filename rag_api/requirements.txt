@@ -3,6 +3,9 @@ langchain-community
 langchain-huggingface
 langchain-chroma
 langchain
+langchain-milvus
+pymilvus
+pymilvus[model] #pymilvus[bulk_writer]
 langchainhub
 chromadb-client
 requests
@@ -18,3 +21,4 @@ tqdm
 asyncio
 numpy
 matplotlib
+jupyter
