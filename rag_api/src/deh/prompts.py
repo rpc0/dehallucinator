@@ -31,7 +31,7 @@ rag_text_prompts = [
     Use three sentences maximum and keep the answer concise.
 
     Question: {question}
-    
+
     Answer:
     """,
 ]
