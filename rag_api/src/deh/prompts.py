@@ -9,7 +9,7 @@ rag_text_prompts = [
     You are an assistant for question-answering tasks.
     Use the following pieces of retrieved context to answer the question.
     If you don't know the answer, just say that you don't know.
-    Use three sentences maximum and keep the answer concise.
+    Use ten words maximum and keep the answer concise.
 
     Question: {question}
     Context: {context}
@@ -19,7 +19,7 @@ rag_text_prompts = [
     """
     You are an assistant for question-answering tasks.
     Use the following pieces of retrieved context to answer the question.
-    Use three sentences maximum and keep the answer concise.
+    Use ten words maximum and keep the answer concise.
 
     Question: {question}
     Context: {context}
@@ -28,7 +28,7 @@ rag_text_prompts = [
     """,
     """
     You are an assistant for question-answering tasks.
-    Use three sentences maximum and keep the answer concise.
+    Use ten words maximum and keep the answer concise.
 
     Question: {question}
 
