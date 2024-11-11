@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import random
 from typing import List, Optional
 from datasets import Dataset
+from enum import Enum
 
 
 @dataclass
@@ -22,14 +23,16 @@ class QASet:
     question: str
     ground_truth: str
     is_impossible: bool
+    ref_context_id: int
 
-    def __init__(self, question, ground_truth, is_impossible) -> None:
+    def __init__(self, question, ground_truth, is_impossible, ref_context_id) -> None:
         self.question = question
         self.ground_truth = ground_truth
         self.is_impossible = is_impossible
+        self.ref_context_id = ref_context_id
 
     def __str__(self) -> str:
-        return f"question: {self.question}, ground_truth: {self.ground_truth}, is_impossible: {self.is_impossible}"
+        return self.to_json()
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -39,6 +42,7 @@ class QASet:
             "question": self.question,
             "ground_truth": self.ground_truth,
             "is_impossible": self.is_impossible,
+            "ref_context_id": self.ref_context_id,
         }
 
 
@@ -84,16 +88,34 @@ class ExperimentSet(QASet):
         )
 
 
+class QASetType(Enum):
+    POSSIBLE_ONLY = 1
+    IMPOSSIBLE_ONLY = 2
+    POSSIBLE_AND_IMPOSSIBLE = 3
+
+
 class QASetRetriever:
 
     @classmethod
     def get_qasets(
-        clz, file_path: str, sample_size: Optional[int] = None
+        clz,
+        file_path: str,
+        sample_size: Optional[int] = None,
+        qa_type: Optional[QASetType] = QASetType.POSSIBLE_ONLY,
     ) -> List[QASet]:
         qa_set = []
         with open(f"{file_path}", "r") as f:
             qa_set = [line.strip().split("\t") for line in f]
 
-        qasets = [QASet(qas[0], qas[1], False) for qas in qa_set]
+        # TSV: question, ground_truth, is_impossible, context_id
+        qasets = [
+            QASet(qas[0], qas[1], qas[2].lower() == "true", qas[3]) for qas in qa_set
+        ]
+
+        if qa_type == QASetType.IMPOSSIBLE_ONLY:
+            qasets = [qa for qa in qasets if qa.is_impossible is True]
+
+        if qa_type == QASetType.POSSIBLE_ONLY:
+            qasets = [qa for qa in qasets if qa.is_impossible is False]
 
         return random.sample(qasets, k=sample_size) if sample_size else qasets
