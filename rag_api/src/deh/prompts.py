@@ -26,6 +26,14 @@ rag_text_prompts = [
 
     Answer:
     """,
+    """
+    You are an assistant for question-answering tasks.
+    Use three sentences maximum and keep the answer concise.
+
+    Question: {question}
+    
+    Answer:
+    """,
 ]
 
 qa_eval_prompt_with_context_text = """
