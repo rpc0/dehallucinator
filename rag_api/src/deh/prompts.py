@@ -4,17 +4,29 @@ from pydantic import BaseModel, Field
 from enum import Enum
 
 # Based on https://smith.langchain.com/hub/rlm/rag-prompt-llama
-rag_prompt_llama_text = """
-You are an assistant for question-answering tasks.
-Use the following pieces of retrieved context to answer the question.
-If you don't know the answer, just say that you don't know.
-Use three sentences maximum and keep the answer concise.
+rag_text_prompts = [
+    """
+    You are an assistant for question-answering tasks.
+    Use the following pieces of retrieved context to answer the question.
+    If you don't know the answer, just say that you don't know.
+    Use three sentences maximum and keep the answer concise.
 
-Question: {question}
-Context: {context}
+    Question: {question}
+    Context: {context}
 
-Answer:
-"""
+    Answer:
+    """,
+    """
+    You are an assistant for question-answering tasks.
+    Use the following pieces of retrieved context to answer the question.
+    Use three sentences maximum and keep the answer concise.
+
+    Question: {question}
+    Context: {context}
+
+    Answer:
+    """,
+]
 
 qa_eval_prompt_with_context_text = """
 You are a teacher evaluating a test.
