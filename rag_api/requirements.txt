@@ -20,5 +20,7 @@ pydantic
 tqdm
 asyncio
 numpy
-matplotlib
 jupyter
+matplotlib
+seaborn
+transformers 
