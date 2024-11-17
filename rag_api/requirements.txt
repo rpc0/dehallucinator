@@ -16,3 +16,4 @@ starlette
 pydantic
 tqdm
 asyncio
+numpy
