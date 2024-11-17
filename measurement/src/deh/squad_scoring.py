@@ -1,6 +1,12 @@
 """
 
-Adapted from the official evaluation script for SQuAD version 2.0.
+Adapted from the official evaluation script for SQuAD version 2.0. 
+
+Calculates the EM and F1 scores for ("preds" contains predicted answers):
+
+    - all questions in preds
+    - all questions in preds that have answers
+    - all questions in preds that don't have answers
 
 NOTE
 The following has not yet been adapted -->
@@ -234,7 +240,7 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
 
   Returns:
 
-   # TODO: comment the return value
+   #TODO: comment the return value
 
   """
   
@@ -425,7 +431,10 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
 #=================================================================================================
 def eval_squad_preds(dataset, preds, na_probs):
   """
-  This is the main function of this module. 
+  This is the main function of this module. It calculates the EM and F1 scores for
+    - all questions in preds
+    - all questions in preds that have answers
+    - all questions in preds that don't have answers
 
   Args:
 
@@ -471,14 +480,13 @@ def eval_squad_preds(dataset, preds, na_probs):
   # Get the EM and F1 scores for all predicted answers for the questions
   exact_raw, f1_raw = get_raw_scores(dataset, preds)
 
-  # Update exact and f1 scores based on threshold (TO DO: describe exactly how)
+  # Update exact and f1 scores based on threshold (#TODO: describe exactly how)
   # exact_thresh and f1_thresh are also dictionaries with the question id's as 
   # keys and the scores as values
   exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
   f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
   
-  # Construct the dictionary that holds the EM and F1 score for the complete 
-  # predictions data set
+  # Construct the dictionary that holds the EM and F1 score for the complete predictions data set
   # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
   out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
 
@@ -487,28 +495,25 @@ def eval_squad_preds(dataset, preds, na_probs):
   # Then merge this into the out_eval dictionary
   has_ans_intersection_qids = list(set(has_pred_qids) & set(has_ans_qids))
   if has_ans_intersection_qids:
-    print("Getting ans metrics...")
+    print("Getting metrics for questions that have answers...")
 #    print(f"1: {has_ans_intersection_qids}")
     has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, has_ans_intersection_qids)
                                   #qid_list=has_pred_qids) #qid_list=has_ans_qids)
     merge_eval(out_eval, has_ans_eval, 'HasAns')
   else:
-    print("Cannot get ans metrics...")
+    print("Cannot get metrics for questions that have answers. There are none in preds...")
  
   # Construct the dictionary using only the questions that have *no* answers
   # Then also merge this into the out_eval dictionary. out_eval now contains
   # the complete info, for example:
-  # OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
-  # 'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
-  # 'NoAns_exact': 70.4457527333894, 'NoAns_f1': 70.4457527333894, 'NoAns_total': 5945})
   no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
   if no_ans_intersection_qids:
-    print("Getting no ans metrics...")
+    print("Getting metrics for questions that don't have answers...")
 #    print(f"2: {no_ans_intersection_qids}")
     no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
     merge_eval(out_eval, no_ans_eval, 'NoAns')
   else:
-    print("Cannot get no ans metrics...")
+    print("Cannot get metrics for questions that don't have answers. There are none in preds...")
 
   return out_eval
 
