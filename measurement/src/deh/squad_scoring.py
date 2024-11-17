@@ -488,7 +488,7 @@ def eval_squad_preds(dataset, preds, na_probs):
   
   # Construct the dictionary that holds the EM and F1 score for the complete predictions data set
   # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
-  print("Getting metrics for all questions...")
+  print("\nGetting metrics for all questions...")
   out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
 
 
@@ -516,6 +516,7 @@ def eval_squad_preds(dataset, preds, na_probs):
   else:
     print("Cannot get metrics for questions that don't have answers. There are none in preds...")
 
+  print("\n")
   return out_eval
 
 
