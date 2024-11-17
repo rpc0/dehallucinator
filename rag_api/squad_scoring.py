@@ -342,6 +342,9 @@ def merge_eval(main_eval, new_eval, prefix):
 
 #=================================================================================================
 def plot_pr_curve(precisions, recalls, out_image, title):
+  """
+  #TODO --> comment this function
+  """
 
   plt.step(recalls, precisions, color='b', alpha=0.2, where='post')
   plt.fill_between(recalls, precisions, step='post', alpha=0.2, color='b')
@@ -357,6 +360,9 @@ def plot_pr_curve(precisions, recalls, out_image, title):
 #=================================================================================================
 def make_precision_recall_eval(scores, na_probs, num_true_pos, qid_to_has_ans,
                                out_image=None, title=None):
+  """
+  #TODO --> comment this function
+  """
   qid_list = sorted(na_probs, key=lambda k: na_probs[k])
   true_pos = 0.0
   cur_p = 1.0
@@ -382,6 +388,10 @@ def make_precision_recall_eval(scores, na_probs, num_true_pos, qid_to_has_ans,
 #=================================================================================================
 def run_precision_recall_analysis(main_eval, exact_raw, f1_raw, na_probs, 
                                   qid_to_has_ans, out_image_dir):
+  """
+  #TODO --> comment this function
+  """
+
   if out_image_dir and not os.path.exists(out_image_dir):
     os.makedirs(out_image_dir)
   num_true_pos = sum(1 for v in qid_to_has_ans.values() if v)
@@ -400,6 +410,7 @@ def run_precision_recall_analysis(main_eval, exact_raw, f1_raw, na_probs,
       oracle_scores, na_probs, num_true_pos, qid_to_has_ans,
       out_image=os.path.join(out_image_dir, 'pr_oracle.png'),
       title='Oracle Precision-Recall curve (binary task of HasAns vs. NoAns)')
+  
   merge_eval(main_eval, pr_exact, 'pr_exact')
   merge_eval(main_eval, pr_f1, 'pr_f1')
   merge_eval(main_eval, pr_oracle, 'pr_oracle')
@@ -407,6 +418,9 @@ def run_precision_recall_analysis(main_eval, exact_raw, f1_raw, na_probs,
 
 #=================================================================================================
 def histogram_na_prob(na_probs, qid_list, image_dir, name):
+  """
+  #TODO --> comment this function
+  """
   
   if not qid_list:
     return
@@ -596,7 +610,6 @@ def eval_squad_preds(dataset, preds, na_probs=None):
   no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
   if no_ans_intersection_qids:
     print("Getting metrics for questions that don't have answers...")
-#    print(f"2: {no_ans_intersection_qids}")
     no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
     merge_eval(out_eval, no_ans_eval, 'NoAns')
   else:
@@ -744,8 +757,6 @@ def load_preds(preds_file):
     print(f"The predictions could not be read. Exiting...")
     exit(1)
 
-#   print(f"========== created preds ==================")  
-#   print(f"57268b43dd62a815002e88f1 in preds --> {preds.get("57268b43dd62a815002e88f1", "no")}")
   return preds
 
 #=================================================================================================
@@ -763,8 +774,6 @@ def simulate_na_probs(preds):
   std_dev = 0.1
 
   for qid, ans in preds.items():
-    # if qid == "57268b43dd62a815002e88f1" or qid == "5726965ef1498d1400e8e488":
-    #   print(f"found --> {qid}")
     if ans:
         sample_prob = np.random.normal(ans_mean, std_dev)
     else:
@@ -777,11 +786,6 @@ def simulate_na_probs(preds):
 
     na_probs[qid] = sample_prob
 
-#   print(f"len(preds) --> {len(preds)}")
-#   print(f"len(na_probs) --> {len(na_probs)}")
-#   print(f"na_probs contains 57268b43dd62a815002e88f1 --> {na_probs.get("57268b43dd62a815002e88f1", 1000.0)}")
-#   print(f"preds contains 57268b43dd62a815002e88f1 --> {preds.get("57268b43dd62a815002e88f1", 1000.0)}")
-#   exit(1)
   return na_probs
 
 
@@ -791,16 +795,13 @@ if __name__ == '__main__':
   # Read command line parameters
   OPTS = parse_args()
 
-  #TODO: currently, matplotlib cannot be used due to a dependency conflict (probably linked to Python 3.13)
-  #TODO: create new environment cloned from current one, but with Python 3.12; then install matplotlib
-  #TODO: investigate all functions that compute additional statistics and plot precision-recall curves
   if OPTS.out_image_dir:
     matplotlib.use('Agg')
 
   # Overwrite cl args for the data file and for the predictions file for testing purposes
   data_file = "data/qa_dl_cache/dev-v2.0.json"
-  #preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
-  preds_file = "data/qa_dl_cache/sample_predictions.csv"
+  preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+  #preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
   # Load the dataset file and the predicitons file
   dataset = load_dataset(data_file)
@@ -822,55 +823,15 @@ if __name__ == '__main__':
       na_probs = {k: 0.0 for k in preds}
 
   # Call eval_squad_preds to compute the metrics
+  # This is the main function that calculates all the metrics and 
+  # generates statistics and plots
   out_eval = eval_squad_preds(dataset, preds, na_probs)
 
-  #Write the results to out_file, if given in the parameters, else dump to screen
+  # Write the results to out_file, if given in the parameters, else dump to screen
   if OPTS.out_file:
     with open(OPTS.out_file, 'w') as f:
       json.dump(out_eval, f)
   else:
     print(json.dumps(out_eval, indent=2), "\n")
   
-
-
-#=================================================================================================
-# def get_preds_csv_from_json():
-
-#     data_file = "data/qa_dl_cache/dev-v2.0.json"
-#     preds_json_file = "data/qa_dl_cache/sample_predictions.json"
-
-#     # Load the file that contains the dataset (expected to be in json format)
-#     with open(data_file) as f:
-#         dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
-#                                             # 'data' contains the real data (see next variable)
-#         dataset = dataset_json['data']      # list of articles; each entry contains data for one single
-#                                             # article (e.g. Harvard university), including title, context 
-#                                             # and qas
-
-#     with open(preds_json_file, "r", encoding="utf-8-sig") as f:
-#       dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
-#                                         # 'data' contains the real data (see next variable)
-#       #dataset = dataset_json['data']      # list of articles; each entry contains data for one single
-#                                         # article (e.g. Harvard university), including title, context 
-      
-#                                       # and qas
-
-#     new_preds_dict = {}
-#     for qid, answer in dataset_json.items():
-#       new_preds_dict[get_question_from_qid(qid, dataset)] = answer
-    
-#     # print(len(new_preds_dict))
-#     # print(new_preds_dict)
-#     # exit(1)
-
-#     preds_csv_file = "data/qa_dl_cache/sample_predictions.json"
-#     with open(preds_csv_file, mode="w", newline="") as file:
-#         writer = writer(file)
-    
-#         # Write the column names
-#         writer.writerow(["question", "answer"])
-
-#         for k, v in new_preds_dict.items():
-#           writer.writerow([k, v])
-
-#     #print((dataset_json))                                      
+                                      
