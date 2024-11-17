@@ -488,6 +488,7 @@ def eval_squad_preds(dataset, preds, na_probs):
   
   # Construct the dictionary that holds the EM and F1 score for the complete predictions data set
   # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
+  print("Getting metrics for all questions...")
   out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
 
 
@@ -553,7 +554,7 @@ if __name__ == '__main__':
   #   matplotlib.use('Agg')
   #   import matplotlib.pyplot as plt 
 
-  print(f"OPTS --> {OPTS}") 
+  #print(f"OPTS --> {OPTS}") 
 
   # Overwrite cl args for testing purposes
   data_file = "data/qa_dl_cache/dev-v2.0.json"
