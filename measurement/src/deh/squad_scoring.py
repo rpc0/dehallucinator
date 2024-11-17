@@ -570,18 +570,6 @@ if __name__ == '__main__':
   data_file = "data/qa_dl_cache/dev-v2.0.json"
   preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
 
-  # DON'T READ the command line args for the moment!!!!!!
-  #OPTS = parse_args()
-
-#   if OPTS.out_image_dir:
-#     import matplotlib
-#     matplotlib.use('Agg')
-#     import matplotlib.pyplot as plt 
-  
-#   main()
-
-  # Load the file that contains the data (i.e. domains / contexts / qas)
-  #with open(OPTS.data_file) as f:
   with open(data_file) as f:
     dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
                                         # 'data' contains the real data (see next variable)
@@ -596,27 +584,7 @@ if __name__ == '__main__':
     for row in reader:
       qid = get_qid(row["question"], dataset)
       preds[qid] = row["answer"]
-      #preds[row[]]
 
-  #print(f"preds --> {preds}")    
-  # for k, v in preds.items():
-  #   print("\n-------------------------")
-  #   print(f"{k} --> {v}")
-  #   print("\n")
-  # exit()
-
-  # with open(OPTS.pred_file, encoding="utf-8-sig") as f:
-  #   preds = json.load(f)
-
-  # construct dictionary for no answers
-  # one entry per question      
-  # if OPTS.na_prob_file:
-  #   with open(OPTS.na_prob_file) as f:
-  #     na_probs = json.load(f)
-  # else:
-  #   na_probs = {k: 0.0 for k in preds}
-
-  #exit()
   out_eval = eval_squad_preds(dataset, preds)
 
   print(out_eval)
