@@ -9,7 +9,8 @@ Calculates the EM and F1 scores for ("preds" contains predicted answers):
     - all questions in preds that don't have answers
 
 NOTE
-The following has not yet been adapted -->
+
+The following has not yet been adapted, since we don't seem to have no answer probability values -->
 
   In addition to basic functionality, we also compute additional statistics and
   plot precision-recall curves if an additional na_prob.json file is provided.
@@ -31,7 +32,7 @@ import matplotlib
 
 import matplotlib.pyplot as plt 
 
-from csv import DictReader
+from csv import DictReader, writer
 
 # Global variable for command line parameters
 OPTS = None
@@ -541,7 +542,7 @@ def eval_squad_preds(dataset, preds, na_probs):
 
 
 #=================================================================================================
-def get_qid(question, dataset):
+def get_qid_from_question(question, dataset):
   """
   Gets the qid of the question provided in the arg "question"
 
@@ -563,8 +564,113 @@ def get_qid(question, dataset):
 
 
 #=================================================================================================
+def get_question_from_qid(qid, dataset):
+  """
+  Gets the questing string for the question given by the id in the arg "qid"
+
+  Args:
+
+    qid (string): the id of the question
+
+  Returns:
+
+    string: the text of the corresponding question, if it is in the dataset; an empty string else
+  """
+
+  for article in dataset:
+    for p in article['paragraphs']:
+      for qa in p['qas']:
+        if qa['id'] == qid:
+          return qa['question']
+  return ''
+
+
+#=================================================================================================
+def load_dataset(data_file):
+  """
+  Loads the data file from the file specified in "data_file" and returns a list. Datafile has
+  to be a json file that corresponds to the format of the dev set found on https://rajpurkar.github.io/SQuAD-explorer/
+
+  Args:
+
+    data_file (string): the path to the data file
+
+  Returns:
+
+    dataset (list): list of the complete dataset; each entry contains data for one single article
+                    (e.g. Harvard university), including title, context and qas
+  """
+
+  dataset = []
+
+  # Load the file that contains the dataset (expected to be in json format)
+  try:
+    with open(data_file) as f:
+      dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
+                                          # 'data' contains the real data (see next variable)
+      dataset = dataset_json['data']      # list of articles; each entry contains data for one single
+                                          # article (e.g. Harvard university), including title, context 
+                                          # and qas
+  except FileNotFoundError:
+    print(f"Error: the data file '{data_file}' could not be found...")
+    exit(1)
+  except json.JSONDecodeError:
+    print(f"Error: the data file '{data_file}' could not be read, since it is not a valid JSON file...")
+    exit(1)
+  except Exception as e:
+    print(f"An unexpected error occured: {e}")
+    exit(1)
+
+  return dataset
+
+
+#=================================================================================================
+def load_preds(preds_file):
+  """
+  Loads the predictions file from the file specified in "preds_file" and returns a dictionary. This
+  function expects a .csv file that contains at least two columns, one of them named "question" that
+  contains the questions in string format (i.e. not the qid's) and the other one name "answer" that
+  contains the predicted answer for each corresponding question.
+
+  Args:
+
+    preds_file (string): the path to the predictions file
+
+  Returns:
+
+    preds (dictionary): dictionary that contains all predictions, with the keys being the qid's
+                        and the values the predicted answers
+  """
+
+  preds = {}
+
+  # Load the file that contains the predictions (expected to be in csv format)
+  try:
+    with open(preds_file, mode="r") as file:
+      reader = DictReader(file)
+      for row in reader:
+        qid = get_qid_from_question(row["question"], dataset)
+        preds[qid] = row["answer"]
+  except FileNotFoundError:
+    print(f"Error: the predictions file '{preds_file}' could not be found...")
+    exit(1)
+  except json.JSONDecodeError:
+    print(f"Error: the predictions file '{preds_file}' could not be read, since it is not a valid CSV file...")
+    exit(1)
+  except Exception as e:
+    print(f"An unexpected error occured: {e}")
+    exit(1)
+  
+  if len(preds) == 0:
+    print(f"The predictions could not be read. Exiting...")
+    exit(1)
+  return preds
+
+
+#=================================================================================================
 if __name__ == '__main__':
 
+  # Read command line parameters
   OPTS = parse_args()
 
   #TODO: currently, matplotlib cannot be used due to a dependency conflict (probably linked to Python 3.13)
@@ -573,25 +679,14 @@ if __name__ == '__main__':
   if OPTS.out_image_dir:
     matplotlib.use('Agg')
 
-  # Overwrite cl args for testing purposes
+  # Overwrite cl args for the data file and for the predictions file for testing purposes
   data_file = "data/qa_dl_cache/dev-v2.0.json"
-  preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+  #preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+  preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
-  # Load the file that contains the dataset (expected to be in json format)
-  with open(data_file) as f:
-    dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
-                                        # 'data' contains the real data (see next variable)
-    dataset = dataset_json['data']      # list of articles; each entry contains data for one single
-                                        # article (e.g. Harvard university), including title, context 
-                                        # and qas
-
-  # Load the file that contains the predictions  
-  preds = {}
-  with open(preds_file, mode="r") as file:
-    reader = DictReader(file)
-    for row in reader:
-      qid = get_qid(row["question"], dataset)
-      preds[qid] = row["answer"]
+  # Load the dataset file and the predicitons file
+  dataset = load_dataset(data_file)
+  preds = load_preds(preds_file)
 
   # construct dictionary for no answer probabilities generated by the model that did the
   # predictions. There should be one entry per question (id) for which there is a prediction
@@ -606,3 +701,46 @@ if __name__ == '__main__':
   out_eval = eval_squad_preds(dataset, preds, na_probs)
 
   print(out_eval, "\n")
+
+
+#=================================================================================================
+# if __name__ == '__main__':
+
+#     data_file = "data/qa_dl_cache/dev-v2.0.json"
+#     preds_json_file = "data/qa_dl_cache/sample_predictions.json"
+
+#     # Load the file that contains the dataset (expected to be in json format)
+#     with open(data_file) as f:
+#         dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
+#                                             # 'data' contains the real data (see next variable)
+#         dataset = dataset_json['data']      # list of articles; each entry contains data for one single
+#                                             # article (e.g. Harvard university), including title, context 
+#                                             # and qas
+
+#     with open(preds_json_file, "r", encoding="utf-8-sig") as f:
+#       dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
+#                                         # 'data' contains the real data (see next variable)
+#       #dataset = dataset_json['data']      # list of articles; each entry contains data for one single
+#                                         # article (e.g. Harvard university), including title, context 
+      
+#                                       # and qas
+
+#     new_preds_dict = {}
+#     for qid, answer in dataset_json.items():
+#       new_preds_dict[get_question_from_qid(qid, dataset)] = answer
+    
+#     # print(len(new_preds_dict))
+#     # print(new_preds_dict)
+#     # exit(1)
+
+#     preds_csv_file = "data/qa_dl_cache/sample_predictions.json"
+#     with open(preds_csv_file, mode="w", newline="") as file:
+#         writer = writer(file)
+    
+#         # Write the column names
+#         writer.writerow(["question", "answer"])
+
+#         for k, v in new_preds_dict.items():
+#           writer.writerow([k, v])
+
+#     #print((dataset_json))                                      
