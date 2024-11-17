@@ -42,7 +42,7 @@ def parse_args():
   """
   Reads in command line arguments for further processing.
   """
-  parser = argparse.ArgumentParser('Official evaluation script for SQuAD version 2.0.')
+  parser = argparse.ArgumentParser('Adapted evaluation script for SQuAD version 2.0.')
 
   # The next two arguments are required, since they are positional...
   parser.add_argument('data_file', metavar='data.json', help='Input data JSON file.')
@@ -53,6 +53,8 @@ def parse_args():
                       help='Write accuracy metrics to file (default is stdout).')
   parser.add_argument('--na-prob-file', '-n', metavar='na_prob.json',
                       help='Model estimates of probability of no answer.')
+  parser.add_argument('--na-prob-sim', '-s', metavar="sim_na_prob.json",
+                      help='Model estimates of probability of no answer are simulated (=y/Y).')
   parser.add_argument('--na-prob-thresh', '-t', type=float, default=1.0,
                       help='Predict "" if no-answer probability exceeds this (default = 1.0).')
   parser.add_argument('--out-image-dir', '-p', metavar='out_images', default=None,
@@ -666,6 +668,35 @@ def load_preds(preds_file):
     exit(1)
   return preds
 
+#=================================================================================================
+def simulate_na_probs(preds):
+  """
+  
+  #TODO --> comment this function
+
+  """
+  
+  na_probs = {}
+
+  ans_mean = 0.15
+  no_ans_mean = 0.85
+  std_dev = 0.1
+
+  for qid, ans in preds.items():
+    if ans:
+        sample_prob = np.random.normal(ans_mean, std_dev)
+    else:
+        sample_prob = np.random.normal(no_ans_mean, std_dev)
+
+    if sample_prob > 1.0:
+        sample_prob = 1.0
+    elif sample_prob < 0.0:
+        sample_prob = 0.0
+
+    na_probs[qid] = sample_prob
+
+  return na_probs
+
 
 #=================================================================================================
 if __name__ == '__main__':
@@ -695,16 +726,26 @@ if __name__ == '__main__':
       na_probs = json.load(f)
   else:
     # if the file is missing, we don't know the probs, so we set them to 0.0
-    na_probs = {k: 0.0 for k in preds}
+    # Setting them to 0.0 ensures that apply_no_ans_threshold does not change the scores
+    if OPTS.na_prob_sim.upper() == 'Y':
+      print("Yes to simulation...")
+      na_probs = simulate_na_probs(preds)
+      print(na_probs)
+    else:
+      print("no simulation...") 
+      na_probs = {k: 0.0 for k in preds}
 
   # Call eval_squad_preds to compute the metrics
   out_eval = eval_squad_preds(dataset, preds, na_probs)
+
+  #TODO
+  #Write the results to out_file , if given in the parameters
 
   print(out_eval, "\n")
 
 
 #=================================================================================================
-# if __name__ == '__main__':
+# def get_preds_csv_from_json():
 
 #     data_file = "data/qa_dl_cache/dev-v2.0.json"
 #     preds_json_file = "data/qa_dl_cache/sample_predictions.json"
