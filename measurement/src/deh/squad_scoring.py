@@ -2,12 +2,13 @@
 
 Adapted from the official evaluation script for SQuAD version 2.0.
 
-The following is not yet adapted -->
+NOTE
+The following has not yet been adapted -->
 
-In addition to basic functionality, we also compute additional statistics and
-plot precision-recall curves if an additional na_prob.json file is provided.
-This file is expected to map question ID's to the model's predicted probability
-that a question is unanswerable.
+  In addition to basic functionality, we also compute additional statistics and
+  plot precision-recall curves if an additional na_prob.json file is provided.
+  This file is expected to map question ID's to the model's predicted probability
+  that a question is unanswerable.
 
 """
 
@@ -233,7 +234,7 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
 
   Returns:
 
-    TO DO
+   # TODO: comment the return value
 
   """
   
@@ -245,6 +246,7 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
       new_scores[qid] = float(not qid_to_has_ans[qid])
     else:
       new_scores[qid] = s
+
   return new_scores
 
 
@@ -258,12 +260,13 @@ def make_eval_dict(exact_scores, f1_scores, qid_list=None):
 
     exact_scores (dictionary): contains the exact scores, one per question (id)
     f1_scores (dictionary): contains the f1 scores, one per question (id)
-    qid_list (list ?): TO DO
+    qid_list (list ?): #TODO comment the meaning of qid_list
 
   Returns:
 
     dictionary: dict that holds the final EM and F1 scores for the whole predictions dataset and the total number of 
                 questions. EM and F1 scores are averages over all questions
+                #TODO: explain the formulat that is used to calculate the F1 score
 
   """
 
@@ -309,6 +312,7 @@ def merge_eval(main_eval, new_eval, prefix):
 
 #=================================================================================================
 def plot_pr_curve(precisions, recalls, out_image, title):
+
   plt.step(recalls, precisions, color='b', alpha=0.2, where='post')
   plt.fill_between(recalls, precisions, step='post', alpha=0.2, color='b')
   plt.xlabel('Recall')
@@ -419,9 +423,10 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
 
 
 #=================================================================================================
-def eval_squad_preds(dataset, preds):
+def eval_squad_preds(dataset, preds, na_probs):
   """
-  
+  This is the main function of this module. 
+
   Args:
 
     dataset (list): list of articles; each entry contains data for one single article 
@@ -445,6 +450,8 @@ def eval_squad_preds(dataset, preds):
 
   """
 
+  # overwrite na_probs for the time being...
+  #TODO --> refactor, once exact role na_probs has been understood!
   na_probs = {k: 0.0 for k in preds}
 
   # Get dictionary that indicates per quesion (using its id),
@@ -533,6 +540,9 @@ if __name__ == '__main__':
 
   OPTS = parse_args()
 
+  #TODO: currently, matplotlib cannot be used due to a dependency conflict (probably linked to Python 3.13)
+  #TODO: create new environment cloned from current one, but with Python 3.12; then install matplotlib
+  #TODO: investigate all functions that compute additional statistics and plot precision-recall curves
   # if OPTS.out_image_dir:
   #   import matplotlib
   #   matplotlib.use('Agg')
