@@ -187,7 +187,7 @@ def get_raw_scores(dataset, preds):
         # If there is no prediction in the predictions dict for the current question
         # print a message
         if qid not in preds:
-          print('Missing prediction for %s' % qid)
+          #print('Missing prediction for %s' % qid)
           continue
         
         # Get the predicted answer
@@ -504,26 +504,35 @@ def eval_squad_preds(dataset, preds):
   # Get the list of questions (ids) that do *not* have an answer
   no_ans_qids = [k for k, v in qid_to_has_ans.items() if not v]
 
+  # Get the list of questions (ids) that have a prediction
+  has_pred_qids = [k for k in preds]
+
   # Get the EM and F1 scores for all predicted answers for the questions
   exact_raw, f1_raw = get_raw_scores(dataset, preds)
 
   # Update exact and f1 scores based on threshold (TO DO: describe exactly how)
   # exact_thresh and f1_thresh are also dictionaries with the question id's as 
   # keys and the scores as values
-  exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, OPTS.na_prob_thresh)
-  f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, OPTS.na_prob_thresh)
+  exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
+  f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
   
   # Construct the dictionary that holds the EM and F1 score for the complete 
   # predictions data set
   # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
-  out_eval = make_eval_dict(exact_thresh, f1_thresh)
+  out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
 
 
   # Construct the dictionary using only the questions that have answers
   # Then merge this into the out_eval dictionary
-  if has_ans_qids:
-    has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=has_ans_qids)
+  has_ans_intersection_qids = list(set(has_pred_qids) & set(has_ans_qids))
+  if has_ans_intersection_qids:
+    print("Getting ans metrics...")
+#    print(f"1: {has_ans_intersection_qids}")
+    has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, has_ans_intersection_qids)
+                                  #qid_list=has_pred_qids) #qid_list=has_ans_qids)
     merge_eval(out_eval, has_ans_eval, 'HasAns')
+  else:
+    print("Cannot get ans metrics...")
  
   # Construct the dictionary using only the questions that have *no* answers
   # Then also merge this into the out_eval dictionary. out_eval now contains
@@ -531,16 +540,38 @@ def eval_squad_preds(dataset, preds):
   # OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
   # 'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
   # 'NoAns_exact': 70.4457527333894, 'NoAns_f1': 70.4457527333894, 'NoAns_total': 5945})
-  if no_ans_qids:
-    no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=no_ans_qids)
+  no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
+  if no_ans_intersection_qids:
+    print("Getting no ans metrics...")
+#    print(f"2: {no_ans_intersection_qids}")
+    no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
     merge_eval(out_eval, no_ans_eval, 'NoAns')
+  else:
+    print("Cannot get no ans metrics...")
 
   return out_eval
 
 #=================================================================================================
+def get_qid(question, dataset):
+
+  for article in dataset:
+    for p in article['paragraphs']:
+      for qa in p['qas']:
+        if qa['question'] == question:
+          return qa['id']
+  return ''
+
+
+#=================================================================================================
+from csv import DictReader
+
 if __name__ == '__main__':
-  
-  OPTS = parse_args()
+
+  data_file = "data/qa_dl_cache/dev-v2.0.json"
+  preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+
+  # DON'T READ the command line args for the moment!!!!!!
+  #OPTS = parse_args()
 
 #   if OPTS.out_image_dir:
 #     import matplotlib
@@ -550,7 +581,8 @@ if __name__ == '__main__':
 #   main()
 
   # Load the file that contains the data (i.e. domains / contexts / qas)
-  with open(OPTS.data_file) as f:
+  #with open(OPTS.data_file) as f:
+  with open(data_file) as f:
     dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
                                         # 'data' contains the real data (see next variable)
     dataset = dataset_json['data']      # list of articles; each entry contains data for one single
@@ -558,17 +590,33 @@ if __name__ == '__main__':
                                         # and qas
 
   # Load the file that contains the predictions  
-  with open(OPTS.pred_file, encoding="utf-8-sig") as f:
-    preds = json.load(f)
+  preds = {}
+  with open(preds_file, mode="r") as file:
+    reader = DictReader(file)
+    for row in reader:
+      qid = get_qid(row["question"], dataset)
+      preds[qid] = row["answer"]
+      #preds[row[]]
+
+  #print(f"preds --> {preds}")    
+  # for k, v in preds.items():
+  #   print("\n-------------------------")
+  #   print(f"{k} --> {v}")
+  #   print("\n")
+  # exit()
+
+  # with open(OPTS.pred_file, encoding="utf-8-sig") as f:
+  #   preds = json.load(f)
 
   # construct dictionary for no answers
   # one entry per question      
-  if OPTS.na_prob_file:
-    with open(OPTS.na_prob_file) as f:
-      na_probs = json.load(f)
-  else:
-    na_probs = {k: 0.0 for k in preds}
+  # if OPTS.na_prob_file:
+  #   with open(OPTS.na_prob_file) as f:
+  #     na_probs = json.load(f)
+  # else:
+  #   na_probs = {k: 0.0 for k in preds}
 
+  #exit()
   out_eval = eval_squad_preds(dataset, preds)
 
   print(out_eval)
