@@ -51,6 +51,7 @@ services:
 
   milvus:
     container_name: milvus
+    hostname: milvus-host
     image: milvusdb/milvus:v2.4.13-gpu
     command: ["milvus", "run", "standalone"]
     security_opt:
@@ -81,6 +82,7 @@ services:
     build: rag_api
     image: deh_rag_api
     container_name: deh_rag_api
+    hostname: deh
     ports:
       - "8080:8080"
     volumes:
