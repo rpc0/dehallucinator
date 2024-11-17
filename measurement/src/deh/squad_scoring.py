@@ -1,10 +1,16 @@
-"""Official evaluation script for SQuAD version 2.0.
+"""
+
+Adapted from the official evaluation script for SQuAD version 2.0.
+
+The following is not yet adapted -->
 
 In addition to basic functionality, we also compute additional statistics and
 plot precision-recall curves if an additional na_prob.json file is provided.
 This file is expected to map question ID's to the model's predicted probability
 that a question is unanswerable.
+
 """
+
 import argparse
 import collections
 import json
@@ -14,6 +20,9 @@ import re
 import string
 import sys
 
+from csv import DictReader
+
+# Global variable for command line parameters
 OPTS = None
 
 #=================================================================================================
@@ -22,8 +31,12 @@ def parse_args():
   Reads in command line arguments for further processing.
   """
   parser = argparse.ArgumentParser('Official evaluation script for SQuAD version 2.0.')
+
+  # The next two arguments are required, since they are positional...
   parser.add_argument('data_file', metavar='data.json', help='Input data JSON file.')
   parser.add_argument('pred_file', metavar='pred.json', help='Model predictions.')
+
+  # ... and these are optional
   parser.add_argument('--out-file', '-o', metavar='eval.json',
                       help='Write accuracy metrics to file (default is stdout).')
   parser.add_argument('--na-prob-file', '-n', metavar='na_prob.json',
@@ -33,9 +46,11 @@ def parse_args():
   parser.add_argument('--out-image-dir', '-p', metavar='out_images', default=None,
                       help='Save precision-recall curves to directory.')
   parser.add_argument('--verbose', '-v', action='store_true')
+
   if len(sys.argv) == 1:
     parser.print_help()
-    sys.exit(1)
+    #sys.exit(1)     # Do not exit, even if no args have been supplied
+  
   return parser.parse_args()
 
 
@@ -46,11 +61,13 @@ def make_qid_to_has_ans(dataset):
   or not the question has an answer.
 
   Args:
-    dataset (list): list of articles (each one containing paragraphs, each paragraph containing questions)
+    dataset (list): list of articles (each one containing paragraphs, each paragraph containing questions and
+                    answers, etc.; i.e. the complete dataset)
 
   Returns:
-    dictionary
+    dictionary: dictionary with qid's specifying for each of them, if they have an answer or not (True/False)
   """
+
   qid_to_has_ans = {}
   for article in dataset:
     for p in article['paragraphs']:
@@ -90,6 +107,9 @@ def normalize_answer(s):
 
 #=================================================================================================
 def get_tokens(s):
+  """
+  Gets the tokens for string s
+  """
   if not s: return []
   return normalize_answer(s).split()
 
@@ -266,6 +286,22 @@ def make_eval_dict(exact_scores, f1_scores, qid_list=None):
 
 #=================================================================================================
 def merge_eval(main_eval, new_eval, prefix):
+  """
+  Merges the new_eval dictionary into the main_eval dictionary
+
+  Args:
+
+    main_eval (dictionary): the main dictionary, that contains the current evaluation metrics,
+                            calculated up to now
+
+    new_eval (dictionary): the dictionary that contains new evaluation metrics that is to be merged
+                           into main_eval
+
+  Returns:
+
+    None
+
+  """
   
   for k in new_eval:
     main_eval['%s_%s' % (prefix, k)] = new_eval[k]
@@ -383,89 +419,6 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
 
 
 #=================================================================================================
-def main():
-  
-  # Load the file that contains the data (i.e. domains / contexts / qas)
-  with open(OPTS.data_file) as f:
-    dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
-                                        # 'data' contains the real data (see next variable)
-    dataset = dataset_json['data']      # list of articles; each entry contains data for one single
-                                        # article (e.g. Harvard university), including title, context 
-                                        # and qas
-
-  # Load the file that contains the predictions  
-  with open(OPTS.pred_file, encoding="utf-8-sig") as f:
-    preds = json.load(f)
-
-  # construct dictionary for no answers
-  # one entry per question      
-  if OPTS.na_prob_file:
-    with open(OPTS.na_prob_file) as f:
-      na_probs = json.load(f)
-  else:
-    na_probs = {k: 0.0 for k in preds}
-
-  # Get dictionary that indicates per quesion (using its id),
-  # whether or not it has an answer.
-  qid_to_has_ans = make_qid_to_has_ans(dataset)  # maps qid to True/False
-
-  # Get the list of question (ids) that have an answer
-  has_ans_qids = [k for k, v in qid_to_has_ans.items() if v]
-
-  # Get the list of questions (ids) that do *not* have an answer
-  no_ans_qids = [k for k, v in qid_to_has_ans.items() if not v]
-
-  # Get the EM and F1 scores for all predicted answers for the questions
-  exact_raw, f1_raw = get_raw_scores(dataset, preds)
-
-  # Update exact and f1 scores based on threshold (TO DO: describe exactly how)
-  # exact_thresh and f1_thresh are also dictionaries with the question id's as 
-  # keys and the scores as values
-  exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, OPTS.na_prob_thresh)
-  f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, OPTS.na_prob_thresh)
-  
-  # Construct the dictionary that holds the EM and F1 score for the complete 
-  # predictions data set
-  # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
-  out_eval = make_eval_dict(exact_thresh, f1_thresh)
-
-
-  # Construct the dictionary using only the questions that have answers
-  # Then merge this into the out_eval dictionary
-  if has_ans_qids:
-    has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=has_ans_qids)
-    merge_eval(out_eval, has_ans_eval, 'HasAns')
- 
-  # Construct the dictionary using only the questions that have *no* answers
-  # Then also merge this into the out_eval dictionary. out_eval now contains
-  # the complete info, for example:
-  # OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
-  # 'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
-  # 'NoAns_exact': 70.4457527333894, 'NoAns_f1': 70.4457527333894, 'NoAns_total': 5945})
-  if no_ans_qids:
-    no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=no_ans_qids)
-    merge_eval(out_eval, no_ans_eval, 'NoAns')
-
- 
-  # Generate further analysis (TO DO: further document these)
-  if OPTS.na_prob_file:
-    find_all_best_thresh(out_eval, preds, exact_raw, f1_raw, na_probs, qid_to_has_ans)
- 
-  if OPTS.na_prob_file and OPTS.out_image_dir:
-    run_precision_recall_analysis(out_eval, exact_raw, f1_raw, na_probs, 
-                                  qid_to_has_ans, OPTS.out_image_dir)
-    histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'hasAns')
-    histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'noAns')
- 
-  # Write the out_eval into an external file
-  if OPTS.out_file:
-    with open(OPTS.out_file, 'w') as f:
-      json.dump(out_eval, f)
-  else:
-    print(json.dumps(out_eval, indent=2))
-
-
-#=================================================================================================
 def eval_squad_preds(dataset, preds):
   """
   
@@ -505,6 +458,7 @@ def eval_squad_preds(dataset, preds):
   no_ans_qids = [k for k, v in qid_to_has_ans.items() if not v]
 
   # Get the list of questions (ids) that have a prediction
+  # Scores will only be calculated for these...
   has_pred_qids = [k for k in preds]
 
   # Get the EM and F1 scores for all predicted answers for the questions
@@ -551,8 +505,20 @@ def eval_squad_preds(dataset, preds):
 
   return out_eval
 
+
 #=================================================================================================
 def get_qid(question, dataset):
+  """
+  Gets the qid of the question provided in the arg "question"
+
+  Args:
+
+    question(string): the string that contains the question
+
+  Returns:
+
+    string: the qid of the question, if it is in the dataset; an empty string else
+  """
 
   for article in dataset:
     for p in article['paragraphs']:
@@ -563,13 +529,22 @@ def get_qid(question, dataset):
 
 
 #=================================================================================================
-from csv import DictReader
-
 if __name__ == '__main__':
 
+  OPTS = parse_args()
+
+  # if OPTS.out_image_dir:
+  #   import matplotlib
+  #   matplotlib.use('Agg')
+  #   import matplotlib.pyplot as plt 
+
+  print(f"OPTS --> {OPTS}") 
+
+  # Overwrite cl args for testing purposes
   data_file = "data/qa_dl_cache/dev-v2.0.json"
   preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
 
+  # Load the file that contains the dataset (expected to be in json format)
   with open(data_file) as f:
     dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
                                         # 'data' contains the real data (see next variable)
@@ -585,6 +560,15 @@ if __name__ == '__main__':
       qid = get_qid(row["question"], dataset)
       preds[qid] = row["answer"]
 
-  out_eval = eval_squad_preds(dataset, preds)
+  # construct dictionary for no answers
+  # one entry per question      
+  if OPTS.na_prob_file:
+    with open(OPTS.na_prob_file) as f:
+      na_probs = json.load(f)
+  else:
+    na_probs = {k: 0.0 for k in preds}
+
+  # Call eval_squad_preds to compute the metrics
+  out_eval = eval_squad_preds(dataset, preds, na_probs)
 
   print(out_eval)
