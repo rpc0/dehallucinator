@@ -367,6 +367,7 @@ def make_precision_recall_eval(scores, na_probs, num_true_pos, qid_to_has_ans, o
     """
     #TODO --> comment this function
     """
+
     qid_list = sorted(na_probs, key=lambda k: na_probs[k])
     true_pos = 0.0
     cur_p = 1.0
@@ -389,453 +390,454 @@ def make_precision_recall_eval(scores, na_probs, num_true_pos, qid_to_has_ans, o
     return {'ap': 100.0 * avg_prec}
 
 
-#=================================================================================================
+# =================================================================================================
 def run_precision_recall_analysis(main_eval, exact_raw, f1_raw, na_probs, 
                                   qid_to_has_ans, out_image_dir):
-  """
-  #TODO --> comment this function
-  """
+    """
+    #TODO --> comment this function
+    """
 
-  if out_image_dir and not os.path.exists(out_image_dir):
-    os.makedirs(out_image_dir)
-  num_true_pos = sum(1 for v in qid_to_has_ans.values() if v)
-  if num_true_pos == 0:
-    return
-  pr_exact = make_precision_recall_eval(
-      exact_raw, na_probs, num_true_pos, qid_to_has_ans,
-      out_image=os.path.join(out_image_dir, 'pr_exact.png'),
-      title='Precision-Recall curve for Exact Match score')
-  pr_f1 = make_precision_recall_eval(
-      f1_raw, na_probs, num_true_pos, qid_to_has_ans,
-      out_image=os.path.join(out_image_dir, 'pr_f1.png'),
-      title='Precision-Recall curve for F1 score')
-  oracle_scores = {k: float(v) for k, v in qid_to_has_ans.items()}
-  pr_oracle = make_precision_recall_eval(
-      oracle_scores, na_probs, num_true_pos, qid_to_has_ans,
-      out_image=os.path.join(out_image_dir, 'pr_oracle.png'),
-      title='Oracle Precision-Recall curve (binary task of HasAns vs. NoAns)')
-  
-  merge_eval(main_eval, pr_exact, 'pr_exact')
-  merge_eval(main_eval, pr_f1, 'pr_f1')
-  merge_eval(main_eval, pr_oracle, 'pr_oracle')
+    if out_image_dir and not os.path.exists(out_image_dir):
+        os.makedirs(out_image_dir)
+    num_true_pos = sum(1 for v in qid_to_has_ans.values() if v)
+    if num_true_pos == 0:
+        return
+    pr_exact = make_precision_recall_eval(
+        exact_raw, na_probs, num_true_pos, qid_to_has_ans,
+        out_image=os.path.join(out_image_dir, 'pr_exact.png'),
+        title='Precision-Recall curve for Exact Match score')
+    pr_f1 = make_precision_recall_eval(
+        f1_raw, na_probs, num_true_pos, qid_to_has_ans,
+        out_image=os.path.join(out_image_dir, 'pr_f1.png'),
+        title='Precision-Recall curve for F1 score')
+    oracle_scores = {k: float(v) for k, v in qid_to_has_ans.items()}
+    pr_oracle = make_precision_recall_eval(
+        oracle_scores, na_probs, num_true_pos, qid_to_has_ans,
+        out_image=os.path.join(out_image_dir, 'pr_oracle.png'),
+        title='Oracle Precision-Recall curve (binary task of HasAns vs. NoAns)')
+
+    merge_eval(main_eval, pr_exact, 'pr_exact')
+    merge_eval(main_eval, pr_f1, 'pr_f1')
+    merge_eval(main_eval, pr_oracle, 'pr_oracle')
 
 
-#=================================================================================================
+# =================================================================================================
 def histogram_na_prob(na_probs, qid_list, image_dir, name):
-  """
-  #TODO --> comment this function
-  """
-  
-  if not qid_list:
-    return
-  
-  print("")
-  print(f"len(na_probs) --> {len(na_probs)}")
-  print(f"len(qid_list) --> {len(qid_list)}")
-  print("")
-  for k in qid_list:
-    if not k in na_probs:
-      print(k)
-  #exit()
+    """
+    #TODO --> comment this function
+    """
 
-  x = [na_probs[k] for k in qid_list]
-  weights = np.ones_like(x) / float(len(x))
-  
-  plt.hist(x, weights=weights, bins=20, range=(0.0, 1.0))
-  plt.xlabel('Model probability of no-answer')
-  plt.ylabel('Proportion of dataset')
-  plt.title('Histogram of no-answer probability: %s' % name)
-  plt.savefig(os.path.join(image_dir, 'na_prob_hist_%s.png' % name))
-  plt.clf()
+    if not qid_list:
+        return
+
+    # print("")
+    # print(f"len(na_probs) --> {len(na_probs)}")
+    # print(f"len(qid_list) --> {len(qid_list)}")
+    # print("")
+    # for k in qid_list:
+    #     if k not in na_probs:
+    #         print(k)
+
+    x = [na_probs[k] for k in qid_list]
+    weights = np.ones_like(x) / float(len(x))
+
+    plt.hist(x, weights=weights, bins=20, range=(0.0, 1.0))
+    plt.xlabel('Model probability of no-answer')
+    plt.ylabel('Proportion of dataset')
+    plt.title('Histogram of no-answer probability: %s' % name)
+    plt.savefig(os.path.join(image_dir, 'na_prob_hist_%s.png' % name))
+    plt.clf()
 
 
-#=================================================================================================
+# =================================================================================================
 def find_best_thresh(preds, scores, na_probs, qid_to_has_ans):
-  """
-  #TODO --> describe what this function does
+    """
+    #TODO --> describe what this function does
 
-  Args:
+    Args:
 
-    preds (dictionary):           dictionary with qid's as keys and predicted answers as values
-    scores (dictionary):          contains the raw scores (either EM or F1) for all questions
-    na_probs (dictionary):        no answer probability for each question (id) (generated by the model)
-    qid_to_has_ans (dictionary):  for each question (id), contains True if question has answer, False else
+      preds (dictionary):           dictionary with qid's as keys and predicted answers as values
+      scores (dictionary):          contains the raw scores (either EM or F1) for all questions
+      na_probs (dictionary):        no answer probability for each question (id) (generated by the model)
+      qid_to_has_ans (dictionary):  for each question (id), contains True if question has answer, False else
 
-  Returns:
+    Returns:
 
-    #TODO
+      #TODO
 
-  """
-  
-  # get number of questions without answer
-  num_no_ans = sum(1 for k in qid_to_has_ans if not qid_to_has_ans[k])  
-
-  print(f"num_no_ans --> {num_no_ans}")
-
-  # Intializations
-  cur_score = num_no_ans
-  best_score = cur_score
-  best_thresh = 0.0
-
-  print(f"cur_score --> {cur_score}")
-  print(f"best_score --> {best_score}")
-  print(f"best_thresh --> {best_thresh}")
-
-  # get a list of question ids, sorted in ascending order by their probabilities
-  # for no answer - i.e. the qid's with lowest probability for no answer come first  
-  qid_list = sorted(na_probs, key=lambda k: na_probs[k])
-
-  for i, qid in enumerate(qid_list):
-    if qid not in scores: 
-      continue
-
-    # At this point, we have a raw score for the question qid
-    if qid_to_has_ans[qid]:    # if question qid has answer 
-      diff = scores[qid]
-    else:                      # else: question has no answer...
-      if preds[qid]:           # if model predicted answer
-        diff = -1              # then subtract one
-      else:
-        diff = 0               # else, don't subtract anthing
-
-    cur_score += diff          # update the current score with the difference
+    """
     
-    if cur_score > best_score: # align the best score to the current score
-      best_score = cur_score
-      best_thresh = na_probs[qid]  # set the current probability for no answer as the new best threshold
-  
-  print("vals to return", 100.0 * best_score / len(scores), best_thresh)
-  
-  return 100.0 * best_score / len(scores), best_thresh
+    # get number of questions without answer
+    num_no_ans = sum(1 for k in qid_to_has_ans if not qid_to_has_ans[k])  
+
+    print(f"num_no_ans --> {num_no_ans}")
+
+    # Intializations
+    cur_score = num_no_ans
+    best_score = cur_score
+    best_thresh = 0.0
+
+    print(f"cur_score --> {cur_score}")
+    print(f"best_score --> {best_score}")
+    print(f"best_thresh --> {best_thresh}")
+
+    # get a list of question ids, sorted in ascending order by their probabilities
+    # for no answer - i.e. the qid's with lowest probability for no answer come first  
+    qid_list = sorted(na_probs, key=lambda k: na_probs[k])
+
+    for i, qid in enumerate(qid_list):
+        if qid not in scores: 
+            continue
+
+        # At this point, we have a raw score for the question qid
+        if qid_to_has_ans[qid]:    # if question qid has answer 
+            diff = scores[qid]
+        else:                      # else: question has no answer...
+            if preds[qid]:         # if model predicted answer
+                diff = -1          # then subtract one
+            else:
+                diff = 0           # else, don't subtract anthing
+
+        cur_score += diff          # update the current score with the difference
+
+        if cur_score > best_score: # align the best score to the current score
+            best_score = cur_score
+            best_thresh = na_probs[qid]  # set the current probability for no answer as the new best threshold
+
+    print("vals to return", 100.0 * best_score / len(scores), best_thresh)
+
+    return 100.0 * best_score / len(scores), best_thresh
 
 
-#=================================================================================================
+# =================================================================================================
 def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_has_ans):
-  """
-  
-  #TODO comment this function
-  
-  """
-  
-  best_exact, exact_thresh = find_best_thresh(preds, exact_raw, na_probs, qid_to_has_ans)
-  best_f1, f1_thresh = find_best_thresh(preds, f1_raw, na_probs, qid_to_has_ans)
+    """
 
-  main_eval['best_exact'] = best_exact
-  main_eval['best_exact_thresh'] = exact_thresh
-  main_eval['best_f1'] = best_f1
-  main_eval['best_f1_thresh'] = f1_thresh
+    #TODO comment this function
+
+    """
+
+    best_exact, exact_thresh = find_best_thresh(preds, exact_raw, na_probs, qid_to_has_ans)
+    best_f1, f1_thresh = find_best_thresh(preds, f1_raw, na_probs, qid_to_has_ans)
+
+    main_eval['best_exact'] = best_exact
+    main_eval['best_exact_thresh'] = exact_thresh
+    main_eval['best_f1'] = best_f1
+    main_eval['best_f1_thresh'] = f1_thresh
 
 
-#=================================================================================================
+# =================================================================================================
 def eval_squad_preds(dataset, preds, na_probs=None):
-  """
-  This is the main function of this module. It calculates the EM and F1 scores for
-    - all questions in preds
-    - all questions in preds that have answers
-    - all questions in preds that don't have answers
+    """
+    This is the main function of this module. It calculates the EM and F1 scores for
+      - all questions in preds
+      - all questions in preds that have answers
+      - all questions in preds that don't have answers
 
-  Args:
+    Args:
 
-    dataset (list):        list of articles; each entry contains data for one single article 
-                           (e.g. Harvard university), including title, contexts and qas
-                           (typically, can be the "dev-v2.0.json" file, read into a list)
+      dataset (list):        list of articles; each entry contains data for one single article 
+                            (e.g. Harvard university), including title, contexts and qas
+                            (typically, can be the "dev-v2.0.json" file, read into a list)
 
-    preds (dictionary):    dictionary that holds predicitons to be evaluated, one answer
-                           per question (id)
+      preds (dictionary):    dictionary that holds predicitons to be evaluated, one answer
+                            per question (id)
 
-    na_probs (dictionary): per question (id), the probability that the question is unanswerable
-                           (such as assessed by the model that did the predictions) 
+      na_probs (dictionary): per question (id), the probability that the question is unanswerable
+                            (such as assessed by the model that did the predictions) 
 
-  Returns:
+    Returns:
 
-    out_eval (dictionary): dictionary that holds EM and F1 scores as well as totals for
-                           the complete set of questions, for the subset of questions that
-                           have answers and for the subset of questions that do not have
-                           answers
-                
-  Example output:
+      out_eval (dictionary): dictionary that holds EM and F1 scores as well as totals for
+                            the complete set of questions, for the subset of questions that
+                            have answers and for the subset of questions that do not have
+                            answers
 
-  OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
-  'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
-  'NoAns_exact': 70.4457527333894, 'NoAns_f1': 70.4457527333894, 'NoAns_total': 5945})
+    Example output:
 
-  """
+    OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
+    'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
+    'NoAns_exact': 70.4457527333894, 'NoAns_f1': 70.4457527333894, 'NoAns_total': 5945})
 
-  # overwrite na_probs with 0.0 values, if not provided...
-  if not na_probs:
-    na_probs = {k: 0.0 for k in preds}
+    """
 
-  # Get dictionary that indicates per quesion (using its id),
-  # whether or not it has an answer.
-  qid_to_has_ans = make_qid_to_has_ans(dataset)  # maps qid to True/False
-  temp_dict = {k: qid_to_has_ans[k] for k in qid_to_has_ans if k in preds} # limit qids to qids for which we have predictions
-  qid_to_has_ans = temp_dict
+    # overwrite na_probs with 0.0 values, if not provided...
+    if not na_probs:
+        na_probs = {k: 0.0 for k in preds}
 
-  # Get the list of question (ids) that have an answer
-  has_ans_qids = [k for k, v in qid_to_has_ans.items() if v]
+    # Get dictionary that indicates per quesion (using its id),
+    # whether or not it has an answer.
+    qid_to_has_ans = make_qid_to_has_ans(dataset)  # maps qid to True/False
+    temp_dict = {k: qid_to_has_ans[k] for k in qid_to_has_ans if k in preds} # limit qids to qids with predictions
+    qid_to_has_ans = temp_dict
 
-  # Get the list of questions (ids) that do *not* have an answer
-  no_ans_qids = [k for k, v in qid_to_has_ans.items() if not v]
+    # Get the list of question (ids) that have an answer
+    has_ans_qids = [k for k, v in qid_to_has_ans.items() if v]
 
-  # Get the list of questions (ids) that have a prediction
-  # Scores will only be calculated for these...
-  has_pred_qids = [k for k in preds]
+    # Get the list of questions (ids) that do *not* have an answer
+    no_ans_qids = [k for k, v in qid_to_has_ans.items() if not v]
 
-  # Get the EM and F1 scores for all predicted answers for the questions
-  # "raw" means no threshold yet applied
-  exact_raw, f1_raw = get_raw_scores(dataset, preds)
+    # Get the list of questions (ids) that have a prediction
+    # Scores will only be calculated for these...
+    has_pred_qids = [k for k in preds]
 
-  # Update exact and f1 scores based on threshold (#TODO: describe exactly how)
-  # exact_thresh and f1_thresh are also dictionaries with the question id's as 
-  # keys and the scores as values
-  exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
-  f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
+    # Get the EM and F1 scores for all predicted answers for the questions
+    # "raw" means no threshold yet applied
+    exact_raw, f1_raw = get_raw_scores(dataset, preds)
+
+    # Update exact and f1 scores based on threshold (#TODO: describe exactly how)
+    # exact_thresh and f1_thresh are also dictionaries with the question id's as 
+    # keys and the scores as values
+    exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
+    f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
+    
+    # Construct the dictionary that holds the EM and F1 score for the complete predictions data set
+    # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
+    print("\nGetting metrics for all questions...")
+    out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
+
+    # Construct the dictionary using only the questions that have answers
+    # Then merge this into the out_eval dictionary
+    has_ans_intersection_qids = list(set(has_pred_qids) & set(has_ans_qids))
+    if has_ans_intersection_qids:
+        print("Getting metrics for questions that have answers...")
+        has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, has_ans_intersection_qids)
+                                    #qid_list=has_pred_qids) #qid_list=has_ans_qids)
+        merge_eval(out_eval, has_ans_eval, 'HasAns')
+    else:
+        print("Cannot get metrics for questions that have answers. There are none in preds...")
   
-  # Construct the dictionary that holds the EM and F1 score for the complete predictions data set
-  # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
-  print("\nGetting metrics for all questions...")
-  out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
+    # Construct the dictionary using only the questions that have *no* answers
+    # Then also merge this into the out_eval dictionary. out_eval now contains
+    # the complete info, for example:
+    no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
+    if no_ans_intersection_qids:
+        print("Getting metrics for questions that don't have answers...")
+        no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
+        merge_eval(out_eval, no_ans_eval, 'NoAns')
+    else:
+        print("Cannot get metrics for questions that don't have answers. There are none in preds...")
 
-  # Construct the dictionary using only the questions that have answers
-  # Then merge this into the out_eval dictionary
-  has_ans_intersection_qids = list(set(has_pred_qids) & set(has_ans_qids))
-  if has_ans_intersection_qids:
-    print("Getting metrics for questions that have answers...")
-#    print(f"1: {has_ans_intersection_qids}")
-    has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, has_ans_intersection_qids)
-                                  #qid_list=has_pred_qids) #qid_list=has_ans_qids)
-    merge_eval(out_eval, has_ans_eval, 'HasAns')
-  else:
-    print("Cannot get metrics for questions that have answers. There are none in preds...")
- 
-  # Construct the dictionary using only the questions that have *no* answers
-  # Then also merge this into the out_eval dictionary. out_eval now contains
-  # the complete info, for example:
-  no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
-  if no_ans_intersection_qids:
-    print("Getting metrics for questions that don't have answers...")
-    no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
-    merge_eval(out_eval, no_ans_eval, 'NoAns')
-  else:
-    print("Cannot get metrics for questions that don't have answers. There are none in preds...")
+    print("")
 
-  print("")
+    if OPTS.na_prob_file or OPTS.na_prob_sim:
+        print(f"\n-----------------------------------------------------------")
+        print("Finding best thresholds... \n")
+        find_all_best_thresh(out_eval, preds, exact_raw, f1_raw, na_probs, qid_to_has_ans)
 
-  if OPTS.na_prob_file or OPTS.na_prob_sim:
-    print(f"\n-----------------------------------------------------------")
-    print("Finding best thresholds... \n")
-    find_all_best_thresh(out_eval, preds, exact_raw, f1_raw, na_probs, qid_to_has_ans)
+    if (OPTS.na_prob_file or OPTS.na_prob_sim) and OPTS.out_image_dir:
+        run_precision_recall_analysis(out_eval, exact_raw, f1_raw, na_probs, 
+                                      qid_to_has_ans, OPTS.out_image_dir)
+        # histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'hasAns')
+        # histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'noAns')
+        histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'Question has answer')
+        histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'Question has no answer')
 
-  if (OPTS.na_prob_file or OPTS.na_prob_sim) and OPTS.out_image_dir:
-    run_precision_recall_analysis(out_eval, exact_raw, f1_raw, na_probs, 
-                                  qid_to_has_ans, OPTS.out_image_dir)
-    # histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'hasAns')
-    # histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'noAns')
-    histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'Question has answer')
-    histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'Question has no answer')
-
-  return out_eval
+    return out_eval
 
 
-#=================================================================================================
+# =================================================================================================
 def get_qid_from_question(question, dataset):
-  """
-  Gets the qid of the question provided in the arg "question"
+    """
+    Gets the qid of the question provided in the arg "question"
 
-  Args:
+    Args:
 
-    question(string): the string that contains the question
+      question(string): the string that contains the question
 
-  Returns:
+    Returns:
 
-    string: the qid of the question, if it is in the dataset; an empty string else
-  """
+      string: the qid of the question, if it is in the dataset; an empty string else
+    """
 
-  for article in dataset:
-    for p in article['paragraphs']:
-      for qa in p['qas']:
-        if qa['question'] == question:
-          return qa['id']
-  return ''
+    for article in dataset:
+        for p in article['paragraphs']:
+            for qa in p['qas']:
+                if qa['question'] == question:
+                    return qa['id']
+    return ''
 
 
-#=================================================================================================
+# =================================================================================================
 def get_question_from_qid(qid, dataset):
-  """
-  Gets the questing string for the question given by the id in the arg "qid"
+    """
+    Gets the questing string for the question given by the id in the arg "qid"
 
-  Args:
+    Args:
 
-    qid (string): the id of the question
+      qid (string): the id of the question
 
-  Returns:
+    Returns:
 
-    string: the text of the corresponding question, if it is in the dataset; an empty string else
-  """
+      string: the text of the corresponding question, if it is in the dataset; an empty string else
+    """
 
-  for article in dataset:
-    for p in article['paragraphs']:
-      for qa in p['qas']:
-        if qa['id'] == qid:
-          return qa['question']
-  return ''
+    for article in dataset:
+        for p in article['paragraphs']:
+            for qa in p['qas']:
+                if qa['id'] == qid:
+                    return qa['question']
+    return ''
 
 
-#=================================================================================================
+# =================================================================================================
 def load_dataset(data_file):
-  """
-  Loads the data file from the file specified in "data_file" and returns a list. Datafile has
-  to be a json file that corresponds to the format of the dev set found on https://rajpurkar.github.io/SQuAD-explorer/
+    """
+    Loads the data file from the file specified in "data_file" and returns a list. Datafile has
+    to be a json file that corresponds to the format of the dev set found on
+    https://rajpurkar.github.io/SQuAD-explorer/
 
-  Args:
+    Args:
 
-    data_file (string): the path to the data file
+      data_file (string): the path to the data file
 
-  Returns:
+    Returns:
 
-    dataset (list): list of the complete dataset; each entry contains data for one single article
-                    (e.g. Harvard university), including title, context and qas
-  """
+      dataset (list): list of the complete dataset; each entry contains data for one single article
+                      (e.g. Harvard university), including title, context and qas
+    """
 
-  dataset = []
+    dataset = []
 
-  # Load the file that contains the dataset (expected to be in json format)
-  try:
-    with open(data_file) as f:
-      dataset_json = json.load(f)         # dataset_json: dict with 'version' and 'data' as keys
-                                          # 'data' contains the real data (see next variable)
-      dataset = dataset_json['data']      # list of articles; each entry contains data for one single
-                                          # article (e.g. Harvard university), including title, context 
-                                          # and qas
-  except FileNotFoundError:
-    print(f"Error: the data file '{data_file}' could not be found...")
-    exit(1)
-  except json.JSONDecodeError:
-    print(f"Error: the data file '{data_file}' could not be read, since it is not a valid JSON file...")
-    exit(1)
-  except Exception as e:
-    print(f"An unexpected error occured: {e}")
-    exit(1)
+    # Load the file that contains the dataset (expected to be in json format)
+    try:
+        with open(data_file) as f:
+            # dataset_json: dict with 'version' and 'data' as keys
+            # 'data' contains the real data (see next variable)
+            dataset_json = json.load(f)       
+            # list of articles; each entry contains data for one single article
+            # (e.g. Harvard university), including title, context and qas
+            dataset = dataset_json['data']    
+    except FileNotFoundError:
+        print(f"Error: the data file '{data_file}' could not be found...")
+        exit(1)
+    except json.JSONDecodeError:
+        print(f"Error: the data file '{data_file}' could not be read, since it is not a valid JSON file...")
+        exit(1)
+    except Exception as e:
+        print(f"An unexpected error occured: {e}")
+        exit(1)
 
     return dataset
 
 
-#=================================================================================================
-def load_preds(preds_file, dataset):
-  """
-  Loads the predictions file from the file specified in "preds_file" and returns a dictionary. This
-  function expects a .csv file that contains at least two columns, one of them named "question" that
-  contains the questions in string format (i.e. not the qid's) and the other one name "answer" that
-  contains the predicted answer for each corresponding question.
+# =================================================================================================
+def load_preds(preds_file):
+    """
+    Loads the predictions file from the file specified in "preds_file" and returns a dictionary. This
+    function expects a .csv file that contains at least two columns, one of them named "question" that
+    contains the questions in string format (i.e. not the qid's) and the other one name "answer" that
+    contains the predicted answer for each corresponding question.
 
-  Args:
+    Args:
 
-    preds_file (string): the path to the predictions file
+      preds_file (string): the path to the predictions file
 
-  Returns:
+    Returns:
 
-    preds (dictionary): dictionary that contains all predictions, with the keys being the qid's
-                        and the values the predicted answers
-  """
+      preds (dictionary): dictionary that contains all predictions, with the keys being the qid's
+                          and the values the predicted answers
+    """
 
-  preds = {}
+    preds = {}
 
-  # Load the file that contains the predictions (expected to be in csv format)
-  try:
-    with open(preds_file, mode="r") as file:
-      reader = DictReader(file)
-      for row in reader:
-        qid = get_qid_from_question(row["question"], dataset)
-        preds[qid] = row["answer"]
-  except FileNotFoundError:
-    print(f"Error: the predictions file '{preds_file}' could not be found...")
-    exit(1)
-  except json.JSONDecodeError:
-    print(f"Error: the predictions file '{preds_file}' could not be read, since it is not a valid CSV file...")
-    exit(1)
-  except Exception as e:
-    print(f"An unexpected error occured: {e}")
-    exit(1)
-  
-  if len(preds) == 0:
-    print(f"The predictions could not be read. Exiting...")
-    exit(1)
+    # Load the file that contains the predictions (expected to be in csv format)
+    try:
+        with open(preds_file, mode="r") as file:
+            reader = DictReader(file)
+            for row in reader:
+                qid = get_qid_from_question(row["question"], dataset)
+                preds[qid] = row["answer"]
+    except FileNotFoundError:
+        print(f"Error: the predictions file '{preds_file}' could not be found...")
+        exit(1)
+    except json.JSONDecodeError:
+        print(f"Error: the predictions file '{preds_file}' could not be read, since it is not a valid CSV file...")
+        exit(1)
+    except Exception as e:
+        print(f"An unexpected error occured: {e}")
+        exit(1)
+    
+    if len(preds) == 0:
+        print(f"The predictions could not be read. Exiting...")
+        exit(1)
 
-  return preds
+    return preds
 
-#=================================================================================================
+
+# =================================================================================================
 def simulate_na_probs(preds):
-  """
-  
-  #TODO --> comment this function
+    """
 
-  """
-  
-  na_probs = {}
+    #TODO --> comment this function
 
-  ans_mean = 0.15
-  no_ans_mean = 0.85
-  std_dev = 0.1
+    """
 
-  for qid, ans in preds.items():
-    if ans:
-        sample_prob = np.random.normal(ans_mean, std_dev)
-    else:
-        sample_prob = np.random.normal(no_ans_mean, std_dev)
+    na_probs = {}
 
-    if sample_prob > 1.0:
-        sample_prob = 1.0
-    elif sample_prob < 0.0:
-        sample_prob = 0.0
+    ans_mean = 0.15
+    no_ans_mean = 0.85
+    std_dev = 0.1
 
-    na_probs[qid] = sample_prob
+    for qid, ans in preds.items():
+        if ans:
+            sample_prob = np.random.normal(ans_mean, std_dev)
+        else:
+            sample_prob = np.random.normal(no_ans_mean, std_dev)
 
-  return na_probs
+        if sample_prob > 1.0:
+            sample_prob = 1.0
+        elif sample_prob < 0.0:
+            sample_prob = 0.0
+
+        na_probs[qid] = sample_prob
+
+    return na_probs
 
 
-#=================================================================================================
+# =================================================================================================
 if __name__ == '__main__':
 
-  # Read command line parameters
-  OPTS = parse_args()
+    # Read command line parameters
+    OPTS = parse_args()
 
-  if OPTS.out_image_dir:
-    matplotlib.use('Agg')
+    if OPTS.out_image_dir:
+        matplotlib.use('Agg')
 
-  # Overwrite cl args for the data file and for the predictions file for testing purposes
-  data_file = "data/qa_dl_cache/dev-v2.0.json"
-  preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
-  #preds_file = "data/qa_dl_cache/sample_predictions.csv"
+    # Overwrite cl args for the data file and for the predictions file for testing purposes
+    data_file = "data/qa_dl_cache/dev-v2.0.json"
+    preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+    # preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
-  # Load the dataset file and the predicitons file
-  dataset = load_dataset(data_file)
-  preds = load_preds(preds_file, dataset)
+    # Load the dataset file and the predicitons file
+    dataset = load_dataset(data_file)
+    preds = load_preds(preds_file)
 
-  # construct dictionary for no answer probabilities generated by the model that did the
-  # predictions. There should be one entry per question (id) for which there is a prediction
-  # If na_prob_file specified, read the probs from the file #TODO --> check required format of the na_prob_file
-  if OPTS.na_prob_file:
-    with open(OPTS.na_prob_file) as f:
-      na_probs = json.load(f)
-  else:
-    # if the file is missing, we don't know the probs, we either simulate non answer probabilities 
-    # or we set probabilities to 0.0 (setting them to 0.0 ensures that apply_no_ans_threshold does 
-    # not change the scores)
-    if OPTS.na_prob_sim:
-      na_probs = simulate_na_probs(preds)
+    # construct dictionary for no answer probabilities generated by the model that did the
+    # predictions. There should be one entry per question (id) for which there is a prediction
+    # If na_prob_file specified, read the probs from the file #TODO --> check required format of the na_prob_file
+    if OPTS.na_prob_file:
+        with open(OPTS.na_prob_file) as f:
+            na_probs = json.load(f)
     else:
-      na_probs = {k: 0.0 for k in preds}
+        # if the file is missing, we don't know the probs, we either simulate non answer probabilities 
+        # or we set probabilities to 0.0 (setting them to 0.0 ensures that apply_no_ans_threshold does 
+        # not change the scores)
+        if OPTS.na_prob_sim:
+            na_probs = simulate_na_probs(preds)
+        else:
+            na_probs = {k: 0.0 for k in preds}
 
-  # Call eval_squad_preds to compute the metrics
-  # This is the main function that calculates all the metrics and 
-  # generates statistics and plots
-  out_eval = eval_squad_preds(dataset, preds, na_probs)
+    # Call eval_squad_preds to compute the metrics
+    # This is the main function that calculates all the metrics and 
+    # generates statistics and plots
+    out_eval = eval_squad_preds(dataset, preds, na_probs)
 
-  # Write the results to out_file, if given in the parameters, else dump to screen
-  if OPTS.out_file:
-    with open(OPTS.out_file, 'w') as f:
-      json.dump(out_eval, f)
-  else:
-    print(json.dumps(out_eval, indent=2), "\n")
+    # Write the results to out_file, if given in the parameters, else dump to screen
+    if OPTS.out_file:
+        with open(OPTS.out_file, 'w') as f:
+            json.dump(out_eval, f)
+    else:
+        print(json.dumps(out_eval, indent=2), "\n")
   
                                       
