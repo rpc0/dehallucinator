@@ -28,10 +28,15 @@ usage: Adapted evaluation script for SQuAD version 2.0. [-h] [--out-file eval.js
                                                         data.json pred.json
 
 positional arguments:
-  data.json             Input data JSON file.
-  pred.json             Model predictions.
 
-options:
+  data.json             Input data JSON file: path to the dataset file (e.g. dev-v2.0.json).
+  pred.json             Model predictions: path to the predictions file (e.g. predictions.csv). The predictions file
+                        has to be a csv file that contains at least two columns, one of them named "question" that
+                        contains the questions in string format (i.e. not the qid's) and the other one named "answer"
+                        that contains the predicted answers for each of the corresponding questions.
+
+optional arguments:
+
   -h, --help            show this help message and exit
   --out-file eval.json, -o eval.json
                         Write accuracy metrics to file (default is stdout).
@@ -48,7 +53,8 @@ usage: Adapted evaluation script for SQuAD version 2.0. [-h] [--out-file eval.js
                                                         data.json pred.json
 
 Note that you you can also directly call the function "calc_squad_metrics", which calculates the metrics. It takes
-the dataset, the predictions and the no answer probabilities as arguments and returns a dictionary with the metrics.
+the dataset, the predictions and the (optional) no answer probabilities as arguments and returns a dictionary with
+the metrics.
 
 Args of calc_squad_metrics:
 
@@ -873,8 +879,8 @@ if __name__ == '__main__':
 
     # Overwrite cl args for the data file and for the predictions file for testing purposes
     data_file = "data/qa_dl_cache/dev-v2.0.json"
-    # preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
-    preds_file = "data/qa_dl_cache/sample_predictions.csv"
+    preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+    #preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
     # Load the dataset file and the predicitons file
     dataset = load_dataset(data_file)
