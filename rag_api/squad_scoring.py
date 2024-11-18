@@ -1,6 +1,6 @@
 """
 
-Adapted from the official evaluation script for SQuAD version 2.0. 
+Adapted from the official evaluation script for SQuAD version 2.0.
 
 Calculates the EM and F1 scores for ("preds" contains predicted answers):
 
@@ -8,14 +8,59 @@ Calculates the EM and F1 scores for ("preds" contains predicted answers):
     - all questions in preds that have answers
     - all questions in preds that don't have answers
 
-NOTE
+It also generates additional statistics and plots precision-recall curves if an additional
+na_prob.json file is provided or if no answer probabilities are simulated (plots are stored
+in "OPTS.image_dir"). This na_prob.json file is expected to map qid's to the model's predicted
+probability that a question is unanswerable.
 
-The following has not been fully adapted, since we don't seem to have no answer probability values -->
+The script expects a .csv file with the predicted answers that contains at least two columns,
+one of them named "question" that contains the questions in string format (i.e. not the qid's)
+and the other one name "answer" that contains the predicted answer for each corresponding question.
 
-  In addition to basic functionality, we also compute additional statistics and
-  plot precision-recall curves if an additional na_prob.json file is provided.
-  This file is expected to map question ID's to the model's predicted probability
-  that a question is unanswerable.
+The script also expects a .json file that contains the dataset (e.g. dev-v2.0.json) that corresponds
+to the format of the dev dataset found on https://rajpurkar.github.io/SQuAD-explorer/.
+
+HOW TO USE (from the command line):
+
+usage: Adapted evaluation script for SQuAD version 2.0. [-h] [--out-file eval.json] [--na-prob-file na_prob.json] [-s]
+                                                        [--na-prob-thresh NA_PROB_THRESH] [--out-image-dir out_images]
+                                                        [--verbose]
+                                                        data.json pred.json
+
+positional arguments:
+  data.json             Input data JSON file.
+  pred.json             Model predictions.
+
+options:
+  -h, --help            show this help message and exit
+  --out-file eval.json, -o eval.json
+                        Write accuracy metrics to file (default is stdout).
+  --na-prob-file na_prob.json, -n na_prob.json
+                        Model estimates of probability of no answer.
+  -s, --na-prob-sim     If used, model estimates of probability of no answer are simulated.
+  --na-prob-thresh NA_PROB_THRESH, -t NA_PROB_THRESH
+                        Predict "" if no-answer probability exceeds this (default = 1.0).
+  --out-image-dir out_images, -p out_images
+                        Save precision-recall curves to directory.
+  --verbose, -v
+usage: Adapted evaluation script for SQuAD version 2.0. [-h] [--out-file eval.json] [--na-prob-file na_prob.json] [-s]
+                                                        [--na-prob-thresh NA_PROB_THRESH] [--out-image-dir out_images] [--verbose]
+                                                        data.json pred.json
+
+Note that you you can also directly call the function "calc_squad_metrics", which calculates the metrics. It takes
+the dataset, the predictions and the no answer probabilities as arguments and returns a dictionary with the metrics.
+
+Args of calc_squad_metrics:
+
+      dataset (list):       list of articles; each entry contains data for one single article 
+                            (e.g. Harvard university), including title, contexts and qas
+                            (typically, read from a json file, such "dev-v2.0.json" file)
+
+      preds (dictionary):   dictionary that holds predicitons to be evaluated, one answer
+                            per question (id)
+
+      na_probs (dictionary): per question (id), the probability that the question is unanswerable
+                            (such as assessed by the model that did the predictions)
 
 """
 
@@ -32,7 +77,7 @@ import matplotlib
 
 import matplotlib.pyplot as plt 
 
-from csv import DictReader, writer
+from csv import DictReader # , writer
 
 # Global variable for command line parameters
 OPTS = None
@@ -477,9 +522,9 @@ def find_best_thresh(preds, scores, na_probs, qid_to_has_ans):
     best_score = cur_score
     best_thresh = 0.0
 
-    print(f"cur_score --> {cur_score}")
-    print(f"best_score --> {best_score}")
-    print(f"best_thresh --> {best_thresh}")
+    # print(f"cur_score --> {cur_score}")
+    # print(f"best_score --> {best_score}")
+    # print(f"best_thresh --> {best_thresh}")
 
     # get a list of question ids, sorted in ascending order by their probabilities
     # for no answer - i.e. the qid's with lowest probability for no answer come first  
@@ -504,7 +549,7 @@ def find_best_thresh(preds, scores, na_probs, qid_to_has_ans):
             best_score = cur_score
             best_thresh = na_probs[qid]  # set the current probability for no answer as the new best threshold
 
-    print("vals to return", 100.0 * best_score / len(scores), best_thresh)
+    # print("vals to return", 100.0 * best_score / len(scores), best_thresh)
 
     return 100.0 * best_score / len(scores), best_thresh
 
@@ -527,24 +572,29 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
 
 
 # =================================================================================================
-def eval_squad_preds(dataset, preds, na_probs=None):
+def calc_squad_metrics(dataset, preds, na_probs=None):
     """
     This is the main function of this module. It calculates the EM and F1 scores for
       - all questions in preds
       - all questions in preds that have answers
       - all questions in preds that don't have answers
 
+    It also generates additional statistics and plots precision-recall curves if an additional
+    na_prob.json file is provided or is no answer probabilities are simulated (plots arestored in 
+    "OPTS.image_dir"). This file is expected to map qid's to the model's predicted probability 
+    that a question is unanswerable.
+
     Args:
 
       dataset (list):        list of articles; each entry contains data for one single article 
                             (e.g. Harvard university), including title, contexts and qas
-                            (typically, can be the "dev-v2.0.json" file, read into a list)
+                            (typically, read from a json file, such "dev-v2.0.json" file)
 
       preds (dictionary):    dictionary that holds predicitons to be evaluated, one answer
                             per question (id)
 
       na_probs (dictionary): per question (id), the probability that the question is unanswerable
-                            (such as assessed by the model that did the predictions) 
+                            (such as assessed by the model that did the predictions)
 
     Returns:
 
@@ -806,38 +856,36 @@ if __name__ == '__main__':
 
     # Overwrite cl args for the data file and for the predictions file for testing purposes
     data_file = "data/qa_dl_cache/dev-v2.0.json"
-    preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
-    # preds_file = "data/qa_dl_cache/sample_predictions.csv"
+    # preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+    preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
     # Load the dataset file and the predicitons file
     dataset = load_dataset(data_file)
     preds = load_preds(preds_file)
 
-    # construct dictionary for no answer probabilities generated by the model that did the
-    # predictions. There should be one entry per question (id) for which there is a prediction
-    # If na_prob_file specified, read the probs from the file #TODO --> check required format of the na_prob_file
+    # Construct dictionary for no answer probabilities generated by the model that did the predictions.
+    # There should be one entry per question (id) for which there is a prediction in the preds dictionary.
+    # If the "na_prob_file" parameter is specified, read the probs from the file
+    # TODO --> check required format of the na_prob_file
     if OPTS.na_prob_file:
-        with open(OPTS.na_prob_file) as f:
+        with open(OPTS.na_prob_file) as f:  # TODO: catch exception if OPTS.na_prob_file deos not exist
             na_probs = json.load(f)
     else:
-        # if the file is missing, we don't know the probs, we either simulate non answer probabilities 
-        # or we set probabilities to 0.0 (setting them to 0.0 ensures that apply_no_ans_threshold does 
+        # if the file is not specified, we don't know the probs, we either simulate non answer probabilities
+        # or we set probabilities to 0.0 (setting them to 0.0 ensures that apply_no_ans_threshold does
         # not change the scores)
         if OPTS.na_prob_sim:
             na_probs = simulate_na_probs(preds)
         else:
             na_probs = {k: 0.0 for k in preds}
 
-    # Call eval_squad_preds to compute the metrics
-    # This is the main function that calculates all the metrics and 
-    # generates statistics and plots
-    out_eval = eval_squad_preds(dataset, preds, na_probs)
+    # Call eval_squad_preds to compute the metrics. This is the main function that calculates all
+    # the metrics and generates statistics and plots.
+    out_eval = calc_squad_metrics(dataset, preds, na_probs)
 
-    # Write the results to out_file, if given in the parameters, else dump to screen
+    # Write the results to OPTS.out_file, if provided in the cl arguments, else dump to screen
     if OPTS.out_file:
         with open(OPTS.out_file, 'w') as f:
             json.dump(out_eval, f)
     else:
         print(json.dumps(out_eval, indent=2), "\n")
-  
-                                      
