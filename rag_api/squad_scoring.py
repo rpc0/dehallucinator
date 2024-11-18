@@ -522,8 +522,6 @@ def find_best_thresh(preds, scores, na_probs, qid_to_has_ans):
     # get number of questions without an answer
     num_no_ans = sum(1 for k in qid_to_has_ans if not qid_to_has_ans[k])  
 
-    print(f"num_no_ans --> {num_no_ans}")
-
     # Intializations
     cur_score = num_no_ans
     best_score = cur_score
@@ -675,24 +673,20 @@ def calc_squad_metrics(dataset, preds, na_probs=None):
     # the complete info, for example:
     no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
     if no_ans_intersection_qids:
-        print("Getting metrics for questions that don't have answers...")
+        print("Getting metrics for questions with no answers...")
         no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
         merge_eval(out_eval, no_ans_eval, 'NoAns')
     else:
         print("Cannot get metrics for questions that don't have answers. There are none in preds...")
 
-    print("")
-
     if OPTS.na_prob_file or OPTS.na_prob_sim:
-        print(f"\n-----------------------------------------------------------")
-        print("Finding best thresholds... \n")
+        print("Finding best thresholds...")
         find_all_best_thresh(out_eval, preds, exact_raw, f1_raw, na_probs, qid_to_has_ans)
 
     if (OPTS.na_prob_file or OPTS.na_prob_sim) and OPTS.out_image_dir:
-        run_precision_recall_analysis(out_eval, exact_raw, f1_raw, na_probs, 
+        print("Running further analysis and generating plots... \n")
+        run_precision_recall_analysis(out_eval, exact_raw, f1_raw, na_probs,
                                       qid_to_has_ans, OPTS.out_image_dir)
-        # histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'hasAns')
-        # histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'noAns')
         histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'Question has answer')
         histogram_na_prob(na_probs, no_ans_qids, OPTS.out_image_dir, 'Question has no answer')
 
@@ -911,4 +905,5 @@ if __name__ == '__main__':
         with open(OPTS.out_file, 'w') as f:
             json.dump(out_eval, f)
     else:
+        print("\nResults of the evaluation:\n")
         print(json.dumps(out_eval, indent=2), "\n")
