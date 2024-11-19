@@ -272,7 +272,6 @@ def compute_f1(a_gold, a_pred):
     f1 = (2 * precision * recall) / (precision + recall)
 
     scores_dict = {"precision": precision, "recall": recall, "f1": f1}
-    print(f"scores_dict: {scores_dict}")
     return scores_dict
 
 
@@ -929,8 +928,8 @@ if __name__ == '__main__':
 
     # Overwrite cl args for the data file and for the predictions file for testing purposes
     data_file = "data/qa_dl_cache/dev-v2.0.json"
-    preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
-    # preds_file = "data/qa_dl_cache/sample_predictions.csv"
+    # preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
+    preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
     # Load the dataset file and the predicitons file
     dataset = load_dataset(data_file)
