@@ -210,16 +210,37 @@ def compute_exact(a_gold, a_pred):
 # =================================================================================================
 def compute_f1(a_gold, a_pred):
     """
-    Computes the f1 score, based on the gold answer and the predicted answer.
+    Computes the f1 score, based on the gold answer and the predicted answer. The computation uses
+    precision and recall. Here is an explanation of both terms:
+
+    Precision measures the proportion of correctly predicted tokens (or words) from the total tokens
+    predicted as part of the answer. In other words:
+
+    Precision = (number of correctly predicted tokens) / (number of total tokens predicted)
+
+    Recall measures the proportion of correctly predicted tokens (or words) out of the total tokens
+    that are part of the gold answer. In other words:
+
+    Recall = (number of correctly predicted tokens) / (number of total tokens in the gold answer)
+
+    The F1 score is the harmonic mean of precision and recall. It is calculated as follows:
+
+    F1 = (2 * precision * recall) / (precision + recall)
+
+    The function 
 
     Args:
 
-      a_gold (string): string that contains the gold answer
-      a_pred (string): string that contains the predicrted answer
+        a_gold (string): string that contains the gold answer
+        a_pred (string): string that contains the predicrted answer
 
     Returns:
 
-      int: the f1 score (formula: (2 * precision * recall) / (precision + recall))
+        dicionary (float, float, float):
+            - precision: the precision score
+            - recall: the recall score
+            - f1 score: the formula is (2 * precision * recall) / (precision + recall))
+                        (the harmonic mean of precision and recall)
 
     """
 
@@ -227,22 +248,32 @@ def compute_f1(a_gold, a_pred):
     gold_toks = get_tokens(a_gold)
     pred_toks = get_tokens(a_pred)
 
-    # Get the common tokens and the number of common tokens
+    # Get the common tokens and the number of common tokens.
+    # When words occur multiple times in the prediction or ground truth, their contributions
+    # to precision and recall are based on the minimum number of occurrences in both sets (=overlap).
+    # To get the overlap, the & operator is used, whereby the resulting dictionary contains the
+    # minimum number of occurrences for each common token. The sum of these values is the number
+    # of correctly predicted tokens.
     common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
-    num_same = sum(common.values())
+    correctly_predicted_tokens_cnt = sum(common.values())
 
     if len(gold_toks) == 0 or len(pred_toks) == 0:
         # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
-        return int(gold_toks == pred_toks)
-    if num_same == 0:
-        return 0
+        # TODO --> check if this is correct
+        agree = (gold_toks == pred_toks)
+        return {"precision": int(agree), "recall": int(agree), "f1": int(agree)}
+        #return int(gold_toks == pred_toks)
+    if correctly_predicted_tokens_cnt == 0:
+        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
 
     # Calculate the f1 score
-    precision = 1.0 * num_same / len(pred_toks)
-    recall = 1.0 * num_same / len(gold_toks)
+    precision = 1.0 * correctly_predicted_tokens_cnt / len(pred_toks)
+    recall = 1.0 * correctly_predicted_tokens_cnt / len(gold_toks)
     f1 = (2 * precision * recall) / (precision + recall)
 
-    return f1
+    scores_dict = {"precision": precision, "recall": recall, "f1": f1}
+    print(f"scores_dict: {scores_dict}")
+    return scores_dict
 
 
 # =================================================================================================
@@ -259,11 +290,15 @@ def get_raw_scores(dataset, preds):
     Returns:
 
       exact_scores (dictionary): for each question, the exact score (either 0 or 1)
-      f1_score (dictionary): for each question, the f1 score (a value between 0 and 1)
+      precision_scores (dictionary): for each question, the precision score (a value between 0 and 1)
+      recall_scores (dictionary): for each question, the recall score (a value between 0 and 1)      
+      f1_scores (dictionary): for each question, the f1 score (a value between 0 and 1)
 
     """
 
     exact_scores = {}
+    precision_scores = {}
+    recall_scores = {}
     f1_scores = {}
 
     for article in dataset:
@@ -290,9 +325,14 @@ def get_raw_scores(dataset, preds):
 
                 # Take max over all gold answers for exact scores and f1 scores alike
                 exact_scores[qid] = max(compute_exact(a, a_pred) for a in gold_answers)
-                f1_scores[qid] = max(compute_f1(a, a_pred) for a in gold_answers)
 
-    return exact_scores, f1_scores
+                # Get precision, recall and f1 scores for the current question
+                # TODO: refactor, since for loop is executed three times!
+                precision_scores[qid] = max(compute_f1(a, a_pred)["precision"] for a in gold_answers)
+                recall_scores[qid] = max(compute_f1(a, a_pred)["recall"] for a in gold_answers)
+                f1_scores[qid] = max(compute_f1(a, a_pred)["f1"] for a in gold_answers)
+
+    return exact_scores, precision_scores, recall_scores, f1_scores
 
 
 # =================================================================================================
@@ -335,35 +375,42 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
 
 
 # =================================================================================================
-def make_eval_dict(exact_scores, f1_scores, qid_list=None):
+def make_eval_dict(exact_scores, precision_scores, recall_scores, f1_scores, qid_list=None):
     """
-    Constructs the dictionary that holds the EM and F1 score for the complete predictions data set
+    Constructs the dictionary that holds the EM, preciasion, reacall and F1 scores for the complete predictions data set
+    # TODO: change example to include precision and recall scores as well
     example output of the function: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
 
     Args:
 
-      exact_scores (dictionary): contains the exact scores, one per question (id)
-      f1_scores (dictionary): contains the f1 scores, one per question (id)
-      qid_list (list ?): #TODO comment the meaning of qid_list
+      exact_scores (dictionary)     : contains the exact scores, one per question (id)
+      precision_scores (dictionary) : contains the precision scores, one per question (id)
+      recall_scores (dictionary)    : contains the recall scores, one per question (id)
+      f1_scores (dictionary)        : contains the f1 scores, one per question (id)
+      qid_list (list)               : list of question ids of the questions to be evaluated
 
     Returns:
 
-      dictionary: dict that holds the final EM and F1 scores for the whole predictions dataset and the total number of 
-                  questions. EM and F1 scores are averages over all questions
-                  #TODO: explain the formulat that is used to calculate the F1 score
+      dictionary: dict that holds the final EM, precision, recall and F1 scores for the whole predictions
+                  dataset and the total number of questions. EM, precision, recall and F1 scores are averages
+                  over all corresponding scores in the dictionaries.
     """
 
-    if not qid_list:
+    if not qid_list: # compute scores for all questions
         total = len(exact_scores)
         return collections.OrderedDict([
             ('exact', 100.0 * sum(exact_scores.values()) / total),
+            ('precision', 100.0 * sum(precision_scores.values()) / total),
+            ('recall', 100.0 * sum(recall_scores.values()) / total),
             ('f1', 100.0 * sum(f1_scores.values()) / total),
             ('total', total),
         ])
-    else:
+    else: # compute scores for a subset of questions
         total = len(qid_list)
         return collections.OrderedDict([
             ('exact', 100.0 * sum(exact_scores[k] for k in qid_list) / total),
+            ('precision', 100.0 * sum(precision_scores[k] for k in qid_list) / total),
+            ('recall', 100.0 * sum(recall_scores[k] for k in qid_list) / total),
             ('f1', 100.0 * sum(f1_scores[k] for k in qid_list) / total),
             ('total', total),
         ])
@@ -650,26 +697,28 @@ def calc_squad_metrics(dataset, preds, na_probs=None):
 
     # Get the EM and F1 scores for all predicted answers for the questions
     # "raw" means no threshold yet applied
-    exact_raw, f1_raw = get_raw_scores(dataset, preds)
+    exact_raw, precision_raw, recall_raw, f1_raw = get_raw_scores(dataset, preds)
 
     # Update exact and f1 scores based on threshold (#TODO: describe exactly how)
     # exact_thresh and f1_thresh are also dictionaries with the question id's as 
     # keys and the scores as values
-    exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
-    f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0) #OPTS.na_prob_thresh)
+    exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0)
+    precision_thresh = apply_no_ans_threshold(precision_raw, na_probs, qid_to_has_ans, 1.0)
+    recall_thresh = apply_no_ans_threshold(recall_raw, na_probs, qid_to_has_ans, 1.0)
+    f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0)
     
-    # Construct the dictionary that holds the EM and F1 score for the complete predictions data set
+    # Construct the dictionary that holds the EM, precision, recall and F1 scores for the complete predictions data set
     # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
     print("\nGetting metrics for all questions...")
-    out_eval = make_eval_dict(exact_thresh, f1_thresh, has_pred_qids)
+    out_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, f1_thresh, has_pred_qids)
 
     # Construct the dictionary using only the questions that have answers
     # Then merge this into the out_eval dictionary
     has_ans_intersection_qids = list(set(has_pred_qids) & set(has_ans_qids))
     if has_ans_intersection_qids:
         print("Getting metrics for questions that have answers...")
-        has_ans_eval = make_eval_dict(exact_thresh, f1_thresh, has_ans_intersection_qids)
-                                    #qid_list=has_pred_qids) #qid_list=has_ans_qids)
+        has_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh,
+                                      f1_thresh, has_ans_intersection_qids)
         merge_eval(out_eval, has_ans_eval, 'HasAns')
     else:
         print("Cannot get metrics for questions that have answers. There are none in preds...")
@@ -680,7 +729,8 @@ def calc_squad_metrics(dataset, preds, na_probs=None):
     no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
     if no_ans_intersection_qids:
         print("Getting metrics for questions with no answers...")
-        no_ans_eval = make_eval_dict(exact_thresh, f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids))) #qid_list=no_ans_qids)
+        no_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, 
+                                     f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids)))
         merge_eval(out_eval, no_ans_eval, 'NoAns')
     else:
         print("Cannot get metrics for questions that don't have answers. There are none in preds...")
@@ -880,7 +930,7 @@ if __name__ == '__main__':
     # Overwrite cl args for the data file and for the predictions file for testing purposes
     data_file = "data/qa_dl_cache/dev-v2.0.json"
     preds_file = "docs/evaluations/baseline-v0/baseline-evaluation-openai-results-v0.csv"
-    #preds_file = "data/qa_dl_cache/sample_predictions.csv"
+    # preds_file = "data/qa_dl_cache/sample_predictions.csv"
 
     # Load the dataset file and the predicitons file
     dataset = load_dataset(data_file)
