@@ -16,3 +16,5 @@ starlette
 pydantic
 tqdm
 asyncio
+numpy
+matplotlib
