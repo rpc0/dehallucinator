@@ -79,7 +79,9 @@ services:
   
   api:
     restart: always
-    build: rag_api
+    build: 
+      context: ./rag_api
+      dockerfile: jupyter.dockerfile  
     image: deh_rag_api
     container_name: deh_rag_api
     hostname: deh
