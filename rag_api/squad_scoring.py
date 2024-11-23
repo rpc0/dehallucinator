@@ -84,8 +84,21 @@ import matplotlib.pyplot as plt
 
 from csv import DictReader # , writer
 
-# Global variable for command line parameters
-OPTS = None
+
+# Init Global variable for command line parameters
+class Options:
+    def __init__(self):
+        self.data_file = None
+        self.pred_file = None
+        self.out_file = None
+        self.na_prob_file = None
+        self.na_prob_sim = False
+        self.na_prob_thresh = 1.0
+        self.out_image_dir = None
+        self.verbose = False
+
+
+OPTS = Options()
 
 
 # =================================================================================================
