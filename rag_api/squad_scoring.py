@@ -85,6 +85,7 @@ import matplotlib.pyplot as plt
 from csv import DictReader # , writer
 
 
+# =================================================================================================
 # Init Global variable for command line parameters
 class Options:
     def __init__(self):
@@ -329,7 +330,8 @@ def get_raw_scores(dataset, preds):
                 # If there is no prediction in the predictions dict for the current question
                 # print a message
                 if qid not in preds:
-                    print('Missing prediction for %s' % qid)
+                    if OPTS.verbose:
+                        print('Missing prediction for %s' % qid)
                     continue
 
                 # Get the predicted answer
@@ -648,7 +650,7 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
 
 
 # =================================================================================================
-def calc_squad_metrics(dataset, preds, na_probs=None):
+def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     """
     This is the main function of this module. It calculates the EM and F1 scores for
       - all questions in preds
@@ -686,6 +688,8 @@ def calc_squad_metrics(dataset, preds, na_probs=None):
     'NoAns_exact': 70.4457527333894, 'NoAns_f1': 70.4457527333894, 'NoAns_total': 5945})
 
     """
+    # Set global variable OPTS.verbose
+    OPTS.verbose = verbose
 
     # overwrite na_probs with 0.0 values, if not provided...
     if not na_probs:
@@ -721,38 +725,45 @@ def calc_squad_metrics(dataset, preds, na_probs=None):
     
     # Construct the dictionary that holds the EM, precision, recall and F1 scores for the complete predictions data set
     # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
-    print("\nGetting metrics for all questions...")
+    if OPTS.verbose:
+        print("\nGetting metrics for all questions...")
     out_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, f1_thresh, has_pred_qids)
 
     # Construct the dictionary using only the questions that have answers
     # Then merge this into the out_eval dictionary
     has_ans_intersection_qids = list(set(has_pred_qids) & set(has_ans_qids))
     if has_ans_intersection_qids:
-        print("Getting metrics for questions that have answers...")
+        if OPTS.verbose:
+            print("Getting metrics for questions that have answers...")
         has_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh,
                                       f1_thresh, has_ans_intersection_qids)
         merge_eval(out_eval, has_ans_eval, 'HasAns')
     else:
-        print("Cannot get metrics for questions that have answers. There are none in preds...")
+        if OPTS.verbose:
+            print("Cannot get metrics for questions that have answers. There are none in preds...")
   
     # Construct the dictionary using only the questions that have *no* answers
     # Then also merge this into the out_eval dictionary. out_eval now contains
     # the complete info, for example:
     no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
     if no_ans_intersection_qids:
-        print("Getting metrics for questions with no answers...")
+        if OPTS.verbose:
+            print("Getting metrics for questions with no answers...")
         no_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, 
                                      f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids)))
         merge_eval(out_eval, no_ans_eval, 'NoAns')
     else:
-        print("Cannot get metrics for questions that don't have answers. There are none in preds...")
+        if OPTS.verbose:
+            print("Cannot get metrics for questions that don't have answers. There are none in preds...")
 
     if OPTS.na_prob_file or OPTS.na_prob_sim:
-        print("Finding best thresholds...")
+        if OPTS.verbose:
+            print("Finding best thresholds...")
         find_all_best_thresh(out_eval, preds, exact_raw, f1_raw, na_probs, qid_to_has_ans)
 
     if (OPTS.na_prob_file or OPTS.na_prob_sim) and OPTS.out_image_dir:
-        print("Running further analysis and generating plots... \n")
+        if OPTS.verbose:
+            print("Running further analysis and generating plots... \n")
         run_precision_recall_analysis(out_eval, exact_raw, f1_raw, na_probs,
                                       qid_to_has_ans, OPTS.out_image_dir)
         histogram_na_prob(na_probs, has_ans_qids, OPTS.out_image_dir, 'Question has answer')
