@@ -391,7 +391,7 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
 # =================================================================================================
 def make_eval_dict(exact_scores, precision_scores, recall_scores, f1_scores, qid_list=None):
     """
-    Constructs the dictionary that holds the EM, preciasion, reacall and F1 scores for the complete predictions data set
+    Constructs the dictionary that holds the EM, precision, reacall and F1 scores for the complete predictions data set
     # TODO: change example to include precision and recall scores as well
     example output of the function: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
 
