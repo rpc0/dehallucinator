@@ -1,6 +1,7 @@
 # ==========================================================================
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_experimental.text_splitter import SemanticChunker
 from langchain_ollama import OllamaEmbeddings
 
 DATA_ROOT = "../../../deh_data_results/data"         # Set to your own data folder
@@ -27,6 +28,13 @@ def get_splitter(chunking_method, chunk_size, chunk_overlap):
         return RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap
+        )
+    elif chunking_method == "semantic":
+        return SemanticChunker(
+            embeddings=embeddings
+            # breakpoint_threshold_type="standard_deviation"
+            # chunk_size=chunk_size,
+            # chunk_overlap=chunk_overlap
         )
     else:
         return None
@@ -58,6 +66,14 @@ def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset
             article_chunks = splitter.create_documents([all_article_contexts]) 
             for article_chunk in article_chunks:
                 chunks.append(article_chunk)
+    elif chunking_method == "semantic":
+        all_contexts = "\n\n".join(contexts)
+        print(f"splitter: {splitter}")
+        # print(f"all_contexts: {all_contexts}")
+        chunks = splitter.create_documents([all_contexts])
+        # chunks = splitter.split_text(all_contexts)
+        print(f"Number of chunks --> {len(chunks)}\n")
+        print("Chunks: ", chunks)
 
     return chunks
 
@@ -75,10 +91,12 @@ def add_chunks_to_vector_store(chunks, vector_store):
 def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=50):
 
     print(f"Creating contexts for the dataset...")
-    chunking_methods = ["naive", "per_context", "per_article"]
+    chunking_methods = ["naive", "per_context", "per_article", "semantic"]
 
     for chunking_method in chunking_methods:
 
+        if not chunking_method =="semantic":
+            continue
         print(f"Chunking method: {chunking_method}")
         collection_name = f"deh_rag_{chunking_method}"
         print(f"Collection name: {collection_name}")

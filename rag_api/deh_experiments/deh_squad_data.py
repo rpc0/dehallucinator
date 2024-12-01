@@ -99,4 +99,7 @@ def load_squad_data():
     print(f"#unique questions in the dataset: {len(unique_questions)}")
     print(f"#unique qas in the dataset: {len(unique_qas)}")
 
+    # TODO: unique_qas is probably no really unique, since it is based on the dictionary
+    #       representation of the qas, which might contain several slightly different answers
+    #       for the same question
     return articles, contexts, qas, unique_qas, unique_questions
