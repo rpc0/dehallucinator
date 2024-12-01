@@ -65,12 +65,9 @@ def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset
 # ==========================================================================
 def add_chunks_to_vector_store(chunks, vector_store):
     ids = [str(i) for i in list(range(len(chunks)))]
-    # print(f"ids --> {ids}")
-    # print(f"Adding {len(chunks)} chunks to the vector store...")
     for i, chunk in enumerate(chunks):
         if i % 10 == 0:
             print(f"Adding chunk {i} to the vector store...")
-            #print(f"{chunk}")
         vector_store.add_documents(documents=[chunk], ids=[ids[i]])
 
 

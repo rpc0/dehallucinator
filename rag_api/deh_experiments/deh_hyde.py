@@ -107,6 +107,7 @@ def generate_hyde_based_contexts(hyde_sample_size=50):
         hyde_based_article = response.content
 
         # generate Hyde context based on the Hyde article
+        # TODOC: Fix the generation of the hyde_based_contexts; the prompt is not correct
         top_docs = vector_store.similarity_search(
             query=question,
             k=5
