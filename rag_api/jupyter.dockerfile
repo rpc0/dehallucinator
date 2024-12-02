@@ -17,4 +17,5 @@ EXPOSE 8080
 # CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--reload", "--port", "8080"]
 
 # Run jupyter notebook
-CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8080", "--NotebookApp.default_url=/notebooks/squad2.ipynb", "--NotebookApp.open_browser=True", "--allow-root"]
+# CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8080", "--NotebookApp.default_url=/notebooks/squad2.ipynb", "--NotebookApp.open_browser=True", "--allow-root"]
+CMD ["jupyter", "notebook", "--ip=0.0.0.0", "--port=8080", "--NotebookApp.default_url=notebooks/squad2.ipynb", "--NotebookApp.open_browser=False", "--NotebookApp.token=''", "--NotebookApp.password=''", "--allow-root"]
