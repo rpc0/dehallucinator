@@ -1,7 +1,9 @@
 # ==========================================================================
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_experimental.text_splitter import SemanticChunker
+# from langchain_experimental.text_splitter import SemanticChunker
+from langchain_core.documents import Document
+from deh_semantic_chunking import SemanticChunker
 from langchain_ollama import OllamaEmbeddings
 
 DATA_ROOT = "../../../deh_data_results/data"         # Set to your own data folder
@@ -31,7 +33,7 @@ def get_splitter(chunking_method, chunk_size, chunk_overlap):
         )
     elif chunking_method == "semantic":
         return SemanticChunker(
-            embeddings=embeddings
+            # embeddings=embeddings
             # breakpoint_threshold_type="standard_deviation"
             # chunk_size=chunk_size,
             # chunk_overlap=chunk_overlap
@@ -68,12 +70,14 @@ def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset
                 chunks.append(article_chunk)
     elif chunking_method == "semantic":
         all_contexts = "\n\n".join(contexts)
-        print(f"splitter: {splitter}")
+        # print(f"splitter: {splitter}")
         # print(f"all_contexts: {all_contexts}")
-        chunks = splitter.create_documents([all_contexts])
+        chunks = splitter.split_text(all_contexts)
+        chunks = [Document(page_content=chunk, metadata={"source": "squad"}) for chunk in chunks]
+
         # chunks = splitter.split_text(all_contexts)
-        print(f"Number of chunks --> {len(chunks)}\n")
-        print("Chunks: ", chunks)
+        # print(f"Number of chunks --> {len(chunks)}\n")
+        # print("Chunks: ", chunks)
 
     return chunks
 
@@ -95,7 +99,8 @@ def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=5
 
     for chunking_method in chunking_methods:
 
-        if not chunking_method =="semantic":
+        # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
+        if chunking_method == "semantic":
             continue
         print(f"Chunking method: {chunking_method}")
         collection_name = f"deh_rag_{chunking_method}"

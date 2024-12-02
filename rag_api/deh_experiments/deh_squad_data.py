@@ -88,7 +88,7 @@ def load_squad_data():
         writer = csv.DictWriter(file, fieldnames=fieldnames)
         writer.writeheader()
         for qa in qas:
-            writer.writerow(qa)             
+            writer.writerow(qa)
 
     unique_questions = list(set([qa["question"] for qa in qas]))
     unique_qas = [dict(t) for t in {tuple(d.items()) for d in qas}]
