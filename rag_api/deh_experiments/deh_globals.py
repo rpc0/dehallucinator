@@ -40,8 +40,8 @@ READ_QAS_FROM_FILE = False
 RESTORE_QAS_WITH_CONTEXTS = False
 
 # # Bootstrap Parameters
-SAMPLE_SIZE = 700
-BOOTSTRAPS_N = 10000
+SAMPLE_SIZE = 10
+BOOTSTRAPS_N = 1000
 
 # Timing
 execution_times_l = []

@@ -44,25 +44,25 @@ BASIC_RAG_HYDE_PROMPT_TEMPLATE = PromptTemplate(
     input_variables=["question"]
 )
 
-BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_1 = PromptTemplate(
-    template="""
-        You are an assistant for validating answers to questions.
-        You are given the following question and context:
+# BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
+#     template="""
+#         You are an assistant for validating answers to questions.
+#         You are given the following question and context:
 
-        Question: {question}
-        Context: {context}
+#         Question: {question}
+#         Context: {context}
 
-        Furthermore, you are given a potential answer to the question:
+#         Furthermore, you are given a potential answer to the question:
 
-        Answer: {answer}
+#         Answer: {answer}
 
-        Please provide a score between 0 and 1, where 0 means that the answer is completely wrong
-        and 1 means that the answer is completely correct. Please use the given context to
-        determine the score.
+#         Please provide a score between 0 and 1, where 0 means that the answer is completely wrong
+#         and 1 means that the answer is completely correct. Please use the given context to
+#         determine the score.
 
-    """,
-    input_variables=["context", "question", "answer"]
-)
+#     """,
+#     input_variables=["context", "question", "answer"]
+# )
 
 llm_as_judge_prompt = """
 
@@ -81,17 +81,17 @@ If you believe that an answser is possible, please determine if the provided Ans
 addresses the Question accurately and answers it correctly.
 
 3.) Please conclude with providing exactly two responses based on the descriptions provided 
-under a.) and b.) below:
+under a.) andb.) below:
 
-a.) Return 'YES' if you believe that an answer is possible and correct, 'NO' else. By all means, 
-do not provide any additional text or a written explanation, not even within parantheses.
-Please just answer with 'YES' or 'NO'.
+a.) Return 'YES' if you believe that an answer is possible and correct, 'NO' else. Also, if the answer
+is empty, return 'NO'. By all means, do not provide any additional text or a written explanation, 
+not even within parantheses. Please just answer with 'YES' or 'NO'.
 
 b.) If you said 'YES' in the previous step:
-    please provide a single score between 0.0 and 1.0, where 0.0 means that the Answer is completely wrong
+    Please provide a single score between 0.0 and 1.0, where 0.0 means that the Answer is completely wrong
     and 1.0 means that the Answer is completely correct. 
     
-    If you said 'NO' in the previous step, please provide a score of 0. 
+    If you said 'NO' in the previous step, please provide a score of 0.0. 
 
 Please only provide a single number for your score and nothing else! By all means, do not 
 provide any additional text or a written explanation, not even within parantheses. All I need is a
@@ -140,7 +140,7 @@ Your Judgment: (Yes/No, Score)
 #     input_variables=["context", "question", "answer"]
 # )
 
-BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE = PromptTemplate(
+BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
     template=llm_as_judge_prompt,
     input_variables=["context", "question", "answer"]
 )
@@ -151,5 +151,5 @@ query_prompts = [
     BASIC_RAG_PROMPT_TEMPLATE,
     BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE,
     BASIC_RAG_HYDE_PROMPT_TEMPLATE,
-    BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE
+    BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE
 ]

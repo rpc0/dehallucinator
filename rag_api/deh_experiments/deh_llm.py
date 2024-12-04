@@ -25,6 +25,8 @@ PRESENCE_PENALTY = 0.0
 llm_judges = [LLM_MODEL_NAME_0, LLM_MODEL_NAME_1, LLM_MODEL_NAME_2,
               LLM_MODEL_NAME_3, LLM_MODEL_NAME_4, LLM_MODEL_NAME_5]
 
+JUDGES_SUPPRESS_THRESHOLD = 0.85
+
 
 # ===================================================================
 # Create the llm instance, based on the current query prompt
