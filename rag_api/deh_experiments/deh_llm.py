@@ -3,6 +3,7 @@ from langchain_ollama import ChatOllama
 # ===================================================================
 # LLM Parameters
 CHAT_MODEL_NAME = "llama3.1"
+JUDGE_MODEL_NAME = "mistral:latest"
 MAX_TOKENS = 100
 TEMPERATURE = 0.5
 TOP_P = 0.95
@@ -12,10 +13,11 @@ PRESENCE_PENALTY = 0.0
 
 # ===================================================================
 # Create the llm instance, based on the current query prompt
-def get_llm(current_query_prompt):
+def get_llm(current_query_prompt, as_judge=False):
     llm = ChatOllama(
         prompt_template=current_query_prompt,
-        model=CHAT_MODEL_NAME,
+        # model=CHAT_MODEL_NAME,
+        model=JUDGE_MODEL_NAME if as_judge else CHAT_MODEL_NAME,
         max_tokens=MAX_TOKENS,
         temperature=TEMPERATURE,
         top_p=TOP_P,
