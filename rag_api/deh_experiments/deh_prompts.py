@@ -63,63 +63,7 @@ BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_1 = PromptTemplate(
     input_variables=["context", "question", "answer"]
 )
 
-llm_as_judge_prompt_1 = """
-
-You are an impartial and analytical judge tasked with evaluating the correctness of an answer based on a given question and context. Your judgment should be logical, well-reasoned, and clearly explained.
-
-Here is the process you should follow:
-
-1.) Carefully read and understand the Question, Context, and Answer provided.
-
-2.) Based on the Context, determine if the Answer fully, partially, or does not address the Question accurately.
-
-3.) Provide a detailed explanation of your judgment. If the answer is partially correct, specify which parts are correct and which are not. If it is incorrect, explain why.
-
-4.) Conclude with providing a score between 0 and 1, where 0 means that the answer is 
-completely wrong and 1 means that the answer is completely correct. Please only provide a number
-in this section and not a written explanation, not even within parantheses.
-
-
-Question: {question}
-
-Context: {context}
-
-Answer: {answer}
-
-Your Judgment:
-
-Your Score:
-"""
-
-llm_as_judge_prompt_2 = """
-
-You are an impartial and analytical judge tasked with evaluating the correctness of an answer 
-based on a given question and context. Your judgment should be logical, well-reasoned, and clearly explained.
-
-Here is the process you should follow:
-
-1.) Carefully read and understand the Question, Context, and Answer provided.
-
-2.) Based on the Context, determine if the Answer is possible at all. 
-If you believe that an answser is possible, please determine if it addresses the question accurately.
-
-3.) Please conclude with providing a single score between 0 and 1, where 0 means that the answer is 
-completely wrong and 1 means that the answer is completely correct. Please only provide a single number
-in your answesr and nothing else! By all means, do not provide a written explanation, not even within
-parantheses. All I need is a single, standalone score!
-
-Question: {question}
-
-Context: {context}
-
-Answer: {answer}
-
-Your Judgment:
-
-Your Score:
-"""
-
-llm_as_judge_prompt_3 = """
+llm_as_judge_prompt = """
 
 You are an impartial and analytical judge tasked with evaluating the correctness of an answer based 
 on a given question and context. You first need to assess if given only the context, an answer to the
@@ -131,22 +75,22 @@ Here is the process you should follow:
 
 1.) Carefully read and understand the Question, Context, and Answer provided.
 
-2.) Based on the Context, determine if an Answer is possible at all, based on the context. 
-If you believe that an answser is possible, please determine if the provided answer
-addresses the question accurately and answers it correctly.
+2.) Based on the Context, determine if an answer is possible at all, based on the Context. 
+If you believe that an answser is possible, please determine if the provided Answer
+addresses the Question accurately and answers it correctly.
 
 3.) Please conclude with providing exactly two responses based on the descriptions provided 
 under a.) and b.) below:
 
-a.) Return 'YES' if you believe that the answer is possible and correct, 'NO' else. By all means, 
+a.) Return 'YES' if you believe that an answer is possible and correct, 'NO' else. By all means, 
 do not provide any additional text or a written explanation, not even within parantheses.
 Please just answer with 'YES' or 'NO'.
 
-b.) If you answered 'YES' in the previous step:
-    please provide a single score between 0 and 1, where 0 means that the answer is completely wrong
-    and 1 means that the answer is completely correct. 
+b.) If you said 'YES' in the previous step:
+    please provide a single score between 0.0 and 1.0, where 0.0 means that the Answer is completely wrong
+    and 1.0 means that the Answer is completely correct. 
     
-    If you answered 'NO' in the previous step, please provide a score of 0. 
+    If you said 'NO' in the previous step, please provide a score of 0. 
 
 Please only provide a single number for your score and nothing else! By all means, do not 
 provide any additional text or a written explanation, not even within parantheses. All I need is a
@@ -164,12 +108,12 @@ Example 1:
 Example 2:
 ----------
 
-(No, 0)
+(No, 0.0)
 
 Example 3:
 ----------
 
-(Yes, 1)
+(Yes, 1.0)
 
 Example 4:
 ----------
@@ -190,13 +134,13 @@ Your Judgment: (Yes/No, Score)
 
 """
 
-BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_2 = PromptTemplate(
-    template=llm_as_judge_prompt_1,
-    input_variables=["context", "question", "answer"]
-)
+# BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_2 = PromptTemplate(
+#     template=llm_as_judge_prompt_1,
+#     input_variables=["context", "question", "answer"]
+# )
 
-BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_3 = PromptTemplate(
-    template=llm_as_judge_prompt_3,
+BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE = PromptTemplate(
+    template=llm_as_judge_prompt,
     input_variables=["context", "question", "answer"]
 )
 
@@ -206,5 +150,5 @@ query_prompts = [
     BASIC_RAG_PROMPT_TEMPLATE,
     BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE,
     BASIC_RAG_HYDE_PROMPT_TEMPLATE,
-    BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_3
+    BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE
 ]

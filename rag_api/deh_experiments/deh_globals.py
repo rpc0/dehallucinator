@@ -16,6 +16,8 @@ data_file = f"{DATA_ROOT}/dev-v2.0.json"
 # dataset = squad_scoring.load_dataset(data_file)
 dataset = load_dataset(data_file)
 
+RESTORE_QAS_WITH_CONTEXTS = False
+
 # # Vector Store Parameters
 VECTOR_STORE_TOP_K = 5
 CHUNK_SIZE = 1000
@@ -36,7 +38,7 @@ REFRESH_HYDE_CONTEXTS = False       # Set to True to create hyde contexts; if Fa
 READ_QAS_FROM_FILE = False
 
 # # Bootstrap Parameters
-SAMPLE_SIZE = 200
+SAMPLE_SIZE = 500
 BOOTSTRAPS_N = 10000
 
 # Timing
