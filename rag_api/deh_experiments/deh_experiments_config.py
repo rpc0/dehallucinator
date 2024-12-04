@@ -10,7 +10,7 @@ BASIC_RAG_SUPPRESS_ANSWSERS_PROMPT_IDX = 4
 experiments = {}
 
 experiments["NO_RAG"] = {"name": "NO_RAG",
-                         "include": True,
+                         "include": False,
                          "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                          "query_prompt_idx": NAIVE_PROMPT_IDX,
                          "context_needed": False,
@@ -34,7 +34,7 @@ experiments["BASIC_RAG_DONT_LIE"] = {"name": "BASIC_RAG_DONT_LIE",
                                      "suppress_answers": False}
 
 experiments["BASIC_RAG_SUPPRESS_ANSWERS"] = {"name": "BASIC_RAG_SUPPRESS_ANSWERS",
-                                             "include": True,
+                                             "include": False,
                                              "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                                              "query_prompt_idx": BASIC_RAG_DONT_LIE_PROMPT_IDX,
                                              "context_needed": True,
