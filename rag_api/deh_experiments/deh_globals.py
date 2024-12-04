@@ -16,14 +16,14 @@ data_file = f"{DATA_ROOT}/dev-v2.0.json"
 # dataset = squad_scoring.load_dataset(data_file)
 dataset = load_dataset(data_file)
 
-RESTORE_QAS_WITH_CONTEXTS = False
+
 
 # # Vector Store Parameters
 VECTOR_STORE_TOP_K = 5
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 100
 DEFAULT_CHROMA_PREFIX = "deh_rag"
-#DEFAULT_CHROMA_COLLECTION = "per_article"
+# DEFAULT_CHROMA_COLLECTION = "per_article"
 DEFAULT_CHROMA_COLLECTION = "per_article"
 CHUNK_SQUAD_DATASET = False        # Set to True to vectorize the squad dataset. If False, 
                                    # then the documents and their embeddings should already
@@ -37,8 +37,10 @@ REFRESH_HYDE_CONTEXTS = False       # Set to True to create hyde contexts; if Fa
 
 READ_QAS_FROM_FILE = False
 
+RESTORE_QAS_WITH_CONTEXTS = False
+
 # # Bootstrap Parameters
-SAMPLE_SIZE = 500
+SAMPLE_SIZE = 700
 BOOTSTRAPS_N = 10000
 
 # Timing

@@ -32,7 +32,7 @@ def get_llm(current_query_prompt, as_judge=False, judge_id=None):
     llm = ChatOllama(
         prompt_template=current_query_prompt,
         # model=CHAT_MODEL_NAME,
-        model=llm_judges[judge_id] if as_judge else LLM_MODEL_NAME_1,
+        model=llm_judges[judge_id] if as_judge else LLM_MODEL_NAME_0,
         max_tokens=MAX_TOKENS,
         temperature=TEMPERATURE,
         top_p=TOP_P,

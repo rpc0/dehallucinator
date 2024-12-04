@@ -26,7 +26,8 @@ BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE = PromptTemplate(
     template="""
         You are an assistant for question-answering tasks.
         Use the following pieces of retrieved context to answer the question.
-        If you don't know the answer, just return 'DONT KNOW'. 
+        If you don't know the answer, just return the text 'DONT KNOW'. Don't add
+        any other text to that, just 'DONT KNOW' on its own line. 
         If you know the answer, keep it as short and concise as possible,
         i.e. to a maximum of a couple of words.
 
