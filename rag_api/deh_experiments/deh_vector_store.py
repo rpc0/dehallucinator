@@ -6,10 +6,11 @@ from langchain_core.documents import Document
 from deh_semantic_chunking import SemanticChunker
 from langchain_ollama import OllamaEmbeddings
 
-DATA_ROOT = "../../../deh_data_results/data"         # Set to your own data folder
+# DATA_ROOT = "../../../deh_data_results/data"         # Set to your own data folder
+CHROMA_ROOT = "../../../deh_data_results/chroma"     # Set to your own chroma folder
 ollama_embedding_model = "avr/sfr-embedding-mistral"
 embeddings = OllamaEmbeddings(model=ollama_embedding_model)
-persist_directory = f"{DATA_ROOT}/chroma_deh_rag_db"
+persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db"
 
 
 # ==========================================================================
@@ -19,7 +20,7 @@ def get_vector_store(prefix, chunking_method):
     return Chroma(
         collection_name=collection_name,
         embedding_function=embeddings,
-        persist_directory=persist_directory
+        persist_directory=persist_directory + f"_{chunking_method}"
     )
 
 
@@ -45,6 +46,8 @@ def get_splitter(chunking_method, chunk_size, chunk_overlap):
 # ==========================================================================
 def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset=None):
 
+    # The splitter is not needed for "pseudo_semantic" chunking.
+    # get_splitter returns None in that case.
     splitter = get_splitter(chunking_method, chunk_size, chunk_overlap)
 
     if chunking_method == "naive":
@@ -70,14 +73,10 @@ def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset
                 chunks.append(article_chunk)
     elif chunking_method == "semantic":
         all_contexts = "\n\n".join(contexts)
-        # print(f"splitter: {splitter}")
-        # print(f"all_contexts: {all_contexts}")
         chunks = splitter.split_text(all_contexts)
         chunks = [Document(page_content=chunk, metadata={"source": "squad"}) for chunk in chunks]
-
-        # chunks = splitter.split_text(all_contexts)
-        # print(f"Number of chunks --> {len(chunks)}\n")
-        # print("Chunks: ", chunks)
+    elif chunking_method == "pseudo_semantic":
+        chunks = [Document(page_content=context, metadata={"source": "squad"}) for context in contexts]
 
     return chunks
 
@@ -95,16 +94,16 @@ def add_chunks_to_vector_store(chunks, vector_store):
 def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=50):
 
     print(f"Creating contexts for the dataset...")
-    chunking_methods = ["naive", "per_context", "per_article", "semantic"]
+    chunking_methods = ["naive", "per_context", "per_article", "semantic", "pseudo_semantic"]
 
     for chunking_method in chunking_methods:
 
-        # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
-        if not chunking_method == "per_article":
-            continue
+        # # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
+        # if not chunking_method == "per_article":
+        #     continue
         print(f"Chunking method: {chunking_method}")
-        collection_name = f"deh_rag_{chunking_method}"
-        print(f"Collection name: {collection_name}")
+        # collection_name = f"deh_rag_{chunking_method}"
+        # print(f"Collection name: {collection_name}")
 
         vector_store = get_vector_store("deh_rag", chunking_method)
         chunks = chunk_contexts(squad_contexts, chunking_method, chunk_size, chunk_overlap, dataset)

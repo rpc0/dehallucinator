@@ -17,11 +17,11 @@ data_file = f"{DATA_ROOT}/dev-v2.0.json"
 dataset = load_dataset(data_file)
 
 # Vector Store Parameters
-VECTOR_STORE_TOP_K = 5
+VECTOR_STORE_TOP_K = 12
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 100
 DEFAULT_CHROMA_PREFIX = "deh_rag"
-DEFAULT_CHROMA_COLLECTION = "per_article"
+DEFAULT_CHUNKING_METHOD = "pseudo_semantic"
 CHUNK_SQUAD_DATASET = False        # Set to True to vectorize the squad dataset. If False, 
                                    # then the documents and their embeddings should already
                                    # exist in the vector store.
@@ -34,10 +34,10 @@ REFRESH_HYDE_CONTEXTS = False       # Set to True to create hyde contexts; if Fa
 
 READ_QAS_FROM_FILE = False
 
-RESTORE_QAS_WITH_CONTEXTS = False
+RESTORE_QAS_WITH_CONTEXTS = True
 
 # # Bootstrap Parameters
-SAMPLE_SIZE = 12
+SAMPLE_SIZE = 200
 BOOTSTRAPS_N = 10000
 
 # Timing

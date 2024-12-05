@@ -9,7 +9,7 @@ LLM_MODEL_NAME_3 = "gemma2:9b"
 LLM_MODEL_NAME_4 = "qwen2.5:14b"
 LLM_MODEL_NAME_5 = "qwen2.5:7b"
 
-CHAT_MODEL_NAME = LLM_MODEL_NAME_2
+CHAT_MODEL_NAME = LLM_MODEL_NAME_0
 
 LLAMA3_1 = 0
 MISTRAL_LATEST = 1
@@ -18,14 +18,16 @@ GEMMA2_9B = 3
 QWEN2_5_14B = 4
 QWEN2_5_7B = 5
 
-MAX_TOKENS = 100
+MAX_TOKENS = 1000
 TEMPERATURE = 0.0
 TOP_P = 0.80
 FREQUENCY_PENALTY = 0.0
 PRESENCE_PENALTY = 0.0
 
-llm_judges = [LLM_MODEL_NAME_0, LLM_MODEL_NAME_1, LLM_MODEL_NAME_2,
+llm_models = [LLM_MODEL_NAME_0, LLM_MODEL_NAME_1, LLM_MODEL_NAME_2,
               LLM_MODEL_NAME_3, LLM_MODEL_NAME_4, LLM_MODEL_NAME_5]
+
+judge_llms = [MISTRAL_LATEST, GEMMA2_9B, QWEN2_5_7B]
 
 JUDGES_SUPPRESS_THRESHOLD = 0.5
 
@@ -36,7 +38,7 @@ def get_llm(current_query_prompt, as_judge=False, judge_id=None):
     llm = ChatOllama(
         prompt_template=current_query_prompt,
         # model=CHAT_MODEL_NAME,
-        model=llm_judges[judge_id] if as_judge else CHAT_MODEL_NAME,
+        model=llm_models[judge_id] if as_judge else CHAT_MODEL_NAME,
         max_tokens=MAX_TOKENS,
         temperature=TEMPERATURE,
         top_p=TOP_P,
