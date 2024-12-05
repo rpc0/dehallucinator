@@ -34,7 +34,7 @@ experiments["BASIC_RAG_DONT_LIE"] = {"name": "BASIC_RAG_DONT_LIE",
                                      "suppress_answers": False}
 
 experiments["BASIC_RAG_SUPPRESS_ANSWERS"] = {"name": "BASIC_RAG_SUPPRESS_ANSWERS",
-                                             "include": True,
+                                             "include": False,
                                              "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                                              "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
                                              "context_needed": True,
@@ -58,7 +58,7 @@ experiments["BASIC_RAG_SEMANTIC_CHUNKING"] = {"name": "BASIC_RAG_SEMANTIC_CHUNKI
                                               "suppress_answers": False}
 
 experiments["FULL_RAG"] = {"name": "FULL_RAG",
-                           "include": False,
+                           "include": True,
                            "sample_ldicts_idx": SAMPLE_HYDE_LDICTS_IDX,
                            "query_prompt_idx": BASIC_RAG_DONT_LIE_PROMPT_IDX,
                            "context_needed": True,
