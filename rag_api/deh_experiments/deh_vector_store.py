@@ -99,7 +99,7 @@ def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=5
     for chunking_method in chunking_methods:
 
         # # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
-        if not chunking_method == "pseudo_semantic":
+        if not chunking_method == "naive":
             continue
         
         print(f"Chunking method: {chunking_method}")
