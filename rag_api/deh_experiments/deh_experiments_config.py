@@ -67,8 +67,8 @@ experiments = {}
 
 
 experiments_include = {
-    "NO_RAG": False,
-    "BASIC_RAG": False,
+    "NO_RAG": True,
+    "BASIC_RAG": True,
     "BASIC_RAG_DONT_LIE": False,
     "BASIC_RAG_SUPPRESS_ANSWERS": False,
     "BASIC_RAG_HYDE": False,
