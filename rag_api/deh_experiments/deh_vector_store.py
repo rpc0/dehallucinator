@@ -10,7 +10,7 @@ from langchain_ollama import OllamaEmbeddings
 CHROMA_ROOT = "../../../deh_data_results/chroma"     # Set to your own chroma folder
 ollama_embedding_model = "avr/sfr-embedding-mistral"
 embeddings = OllamaEmbeddings(model=ollama_embedding_model)
-persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db"
+persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db_k{VECTOR_STORE_TOP_K}_cs{CHUNK_SIZE}"
 
 
 # ==========================================================================
