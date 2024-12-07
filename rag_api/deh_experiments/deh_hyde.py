@@ -88,7 +88,7 @@ def generate_hyde_based_contexts(hyde_sample_size=50):
     llm = get_llm(current_query_prompt)
     runnable_chain = RunnableSequence(current_query_prompt | llm)
 
-    vector_store = get_vector_store("deh_rag", "per_article")
+    vector_store = get_vector_store("deh_rag", DEFAULT_CHUNKING_METHOD)
 
     for i, qa in enumerate(sample):
         print(f"Processing question {i}...")
