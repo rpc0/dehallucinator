@@ -8,8 +8,9 @@ LLM_MODEL_NAME_2 = "gemma2:27b"
 LLM_MODEL_NAME_3 = "gemma2:9b"
 LLM_MODEL_NAME_4 = "qwen2.5:14b"
 LLM_MODEL_NAME_5 = "qwen2.5:7b"
+#LLM_MODEL_NAME_6 = "llama3.3:latest"
 
-CHAT_MODEL_NAME = LLM_MODEL_NAME_4
+CHAT_MODEL_NAME = LLM_MODEL_NAME_5
 
 LLAMA3_1 = 0
 MISTRAL_LATEST = 1
@@ -29,7 +30,7 @@ llm_models = [LLM_MODEL_NAME_0, LLM_MODEL_NAME_1, LLM_MODEL_NAME_2,
 
 judge_llms = [MISTRAL_LATEST, GEMMA2_9B, QWEN2_5_7B]
 
-JUDGES_SUPPRESS_THRESHOLD = 0.5
+JUDGES_SUPPRESS_THRESHOLD = 0.75
 
 
 # ===================================================================

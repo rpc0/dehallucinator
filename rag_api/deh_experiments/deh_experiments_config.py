@@ -9,8 +9,75 @@ BASIC_RAG_SUPPRESS_ANSWSERS_PROMPT_IDX = 4
 
 experiments = {}
 
+# experiments["NO_RAG"] = {"name": "NO_RAG",
+#                          "include": True,
+#                          "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
+#                          "query_prompt_idx": NAIVE_PROMPT_IDX,
+#                          "context_needed": False,
+#                          "hyde_context_needed": False,
+#                          "suppress_answers": False}
+
+# experiments["BASIC_RAG"] = {"name": "BASIC_RAG",
+#                             "include": True,
+#                             "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
+#                             "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
+#                             "context_needed": True,
+#                             "hyde_context_needed": False,
+#                             "suppress_answers": False}
+
+# experiments["BASIC_RAG_DONT_LIE"] = {"name": "BASIC_RAG_DONT_LIE",
+#                                      "include": True,
+#                                      "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
+#                                      "query_prompt_idx": BASIC_RAG_DONT_LIE_PROMPT_IDX,
+#                                      "context_needed": True,
+#                                      "hyde_context_needed": False,
+#                                      "suppress_answers": False}
+
+# experiments["BASIC_RAG_SUPPRESS_ANSWERS"] = {"name": "BASIC_RAG_SUPPRESS_ANSWERS",
+#                                              "include": True,
+#                                              "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
+#                                              "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
+#                                              "context_needed": True,
+#                                              "hyde_context_needed": False,
+#                                              "suppress_answers": True}
+
+# experiments["BASIC_RAG_HYDE"] = {"name": "BASIC_RAG_HYDE",
+#                                  "include": True,
+#                                  "sample_ldicts_idx": SAMPLE_HYDE_LDICTS_IDX,
+#                                  "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
+#                                  "context_needed": True,
+#                                  "hyde_context_needed": True,
+#                                  "suppress_answers": False}
+
+# experiments["BASIC_RAG_SEMANTIC_CHUNKING"] = {"name": "BASIC_RAG_SEMANTIC_CHUNKING",
+#                                               "include": False,
+#                                               "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
+#                                               "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
+#                                               "context_needed": True,
+#                                               "hyde_context_needed": False,
+#                                               "suppress_answers": False}
+
+# experiments["FULL_RAG"] = {"name": "FULL_RAG",
+#                            "include": True,
+#                            "sample_ldicts_idx": SAMPLE_HYDE_LDICTS_IDX,
+#                            "query_prompt_idx": BASIC_RAG_DONT_LIE_PROMPT_IDX,
+#                            "context_needed": True,
+#                            "hyde_context_needed": True,
+#                            "suppress_answers": False}
+
+
+experiments_include = {
+    "NO_RAG": False,
+    "BASIC_RAG": False,
+    "BASIC_RAG_DONT_LIE": False,
+    "BASIC_RAG_SUPPRESS_ANSWERS": False,
+    "BASIC_RAG_HYDE": False,
+    "BASIC_RAG_SEMANTIC_CHUNKING": False,
+    "FULL_RAG": True
+}
+
 experiments["NO_RAG"] = {"name": "NO_RAG",
-                         "include": False,
+                         #"include": False,
                          "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                          "query_prompt_idx": NAIVE_PROMPT_IDX,
                          "context_needed": False,
@@ -18,7 +85,7 @@ experiments["NO_RAG"] = {"name": "NO_RAG",
                          "suppress_answers": False}
 
 experiments["BASIC_RAG"] = {"name": "BASIC_RAG",
-                            "include": False,
+                            #"include": False,
                             "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                             "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
                             "context_needed": True,
@@ -26,7 +93,7 @@ experiments["BASIC_RAG"] = {"name": "BASIC_RAG",
                             "suppress_answers": False}
 
 experiments["BASIC_RAG_DONT_LIE"] = {"name": "BASIC_RAG_DONT_LIE",
-                                     "include": False,
+                                     #"include": True,
                                      "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                                      "query_prompt_idx": BASIC_RAG_DONT_LIE_PROMPT_IDX,
                                      "context_needed": True,
@@ -34,7 +101,7 @@ experiments["BASIC_RAG_DONT_LIE"] = {"name": "BASIC_RAG_DONT_LIE",
                                      "suppress_answers": False}
 
 experiments["BASIC_RAG_SUPPRESS_ANSWERS"] = {"name": "BASIC_RAG_SUPPRESS_ANSWERS",
-                                             "include": False,
+                                             #"include": False,
                                              "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                                              "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
                                              "context_needed": True,
@@ -42,15 +109,15 @@ experiments["BASIC_RAG_SUPPRESS_ANSWERS"] = {"name": "BASIC_RAG_SUPPRESS_ANSWERS
                                              "suppress_answers": True}
 
 experiments["BASIC_RAG_HYDE"] = {"name": "BASIC_RAG_HYDE",
-                                 "include": False,
+                                 #"include": False,
                                  "sample_ldicts_idx": SAMPLE_HYDE_LDICTS_IDX,
                                  "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
                                  "context_needed": True,
-                                 "hyde_context_needed": False,
+                                 "hyde_context_needed": True,
                                  "suppress_answers": False}
 
 experiments["BASIC_RAG_SEMANTIC_CHUNKING"] = {"name": "BASIC_RAG_SEMANTIC_CHUNKING",
-                                              "include": False,
+                                              #"include": False,
                                               "sample_ldicts_idx": SAMPLE_LDICTS_IDX,
                                               "query_prompt_idx": BASIC_RAG_PROMPT_IDX,
                                               "context_needed": True,
@@ -58,12 +125,9 @@ experiments["BASIC_RAG_SEMANTIC_CHUNKING"] = {"name": "BASIC_RAG_SEMANTIC_CHUNKI
                                               "suppress_answers": False}
 
 experiments["FULL_RAG"] = {"name": "FULL_RAG",
-                           "include": True,
+                           #"include": True,
                            "sample_ldicts_idx": SAMPLE_HYDE_LDICTS_IDX,
                            "query_prompt_idx": BASIC_RAG_DONT_LIE_PROMPT_IDX,
                            "context_needed": True,
                            "hyde_context_needed": True,
                            "suppress_answers": False}
-
-
-

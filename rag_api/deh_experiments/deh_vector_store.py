@@ -5,12 +5,14 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
 from deh_semantic_chunking import SemanticChunker
 from langchain_ollama import OllamaEmbeddings
+import deh_globals
+# globals().update(deh_globals.__dict__)
 
 # DATA_ROOT = "../../../deh_data_results/data"         # Set to your own data folder
 CHROMA_ROOT = "../../../deh_data_results/chroma"     # Set to your own chroma folder
 ollama_embedding_model = "avr/sfr-embedding-mistral"
 embeddings = OllamaEmbeddings(model=ollama_embedding_model)
-persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db_k{VECTOR_STORE_TOP_K}_cs{CHUNK_SIZE}"
+persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db_k{deh_globals.VECTOR_STORE_TOP_K}_cs{deh_globals.CHUNK_SIZE}"
 
 
 # ==========================================================================
