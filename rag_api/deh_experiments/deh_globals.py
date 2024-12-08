@@ -39,8 +39,8 @@ REFRESH_HYDE_CONTEXTS = False       # Set to True to create hyde contexts; if Fa
 RESTORE_QAS_WITH_CONTEXTS = False
 
 # # Bootstrap Parameters
-SAMPLE_SIZE = 10
-BOOTSTRAPS_N = 1000
+SAMPLE_SIZE = 500
+BOOTSTRAPS_N = 10000
 
 # Timing
 execution_times_l = []

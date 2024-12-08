@@ -2,6 +2,8 @@
 import csv
 import argparse
 import sys
+import os
+# sys.path.append(os.path.abspath("../../../deh/src"))
 from deh_squad_data import load_squad_data
 from deh_llm import get_llm
 from deh_vector_store import get_vector_store
@@ -64,7 +66,7 @@ def get_hyde_based_contexts(hyde_based_contexts_path):
 # Names of datasets : unique_questions, unique_qas
 # Generate HYDE_SAMPLE_SIZE random samples from the unique_qas and 
 # generate the hyde_based_contexts for each of the samples
-def generate_hyde_based_contexts(hyde_sample_size=50):
+def generate_hyde_based_contexts(hyde_sample_size=150):
 
     DATA_ROOT = "/home/spiro/Studium/Harvard/00_Capstone/deh_data_results/data"  # Set to your own data folder
     HYDE_BASED_CONTEXTS_ROOT = F"{DATA_ROOT}/hyde_based_contexts"      # Set to your own hyde-based contexts folder
