@@ -11,7 +11,7 @@ LLM_MODEL_NAME_5 = "qwen2.5:7b"
 LLM_MODEL_NAME_6 = "qwen2.5:32b"
 # LLM_MODEL_NAME_6 = "llama3.3:latest" - this model is too big and doesn't fit into memory with the current setup
 
-CHAT_MODEL_NAME = LLM_MODEL_NAME_5
+CHAT_MODEL_NAME = LLM_MODEL_NAME_0
 
 LLAMA3_1 = 0
 MISTRAL_LATEST = 1
@@ -21,7 +21,7 @@ QWEN2_5_14B = 4
 QWEN2_5_7B = 5
 
 MAX_TOKENS = 20
-TEMPERATURE = 2.0
+TEMPERATURE = 0.5
 TOP_P = 0.80
 FREQUENCY_PENALTY = 0.0
 PRESENCE_PENALTY = 0.0

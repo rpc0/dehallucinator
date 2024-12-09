@@ -18,7 +18,11 @@ persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db_k{deh_globals.VECTO
 # ==========================================================================
 def get_vector_store(prefix, chunking_method):
 
+    # TODO: currently, vector store and collection name are the same, and
+    #       each collection is stored in its own chromadb.
+    # Ultimately, all collections should be stored in the same chromadb.
     collection_name = f"{prefix}_{chunking_method}"
+    print(f"Will now get the following vector store: {persist_directory}" + f"_{chunking_method}")
     return Chroma(
         collection_name=collection_name,
         embedding_function=embeddings,
@@ -101,7 +105,7 @@ def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=5
     for chunking_method in chunking_methods:
 
         # # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
-        if not chunking_method == "naive":
+        if not chunking_method == "per_article":
             continue
         
         print(f"Chunking method: {chunking_method}")

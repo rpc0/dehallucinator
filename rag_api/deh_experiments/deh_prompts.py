@@ -1,11 +1,52 @@
-# Get the absolute path to the `deh/src` directory
 from langchain.prompts import PromptTemplate
 import prompts
 
-NO_RAG_PROMPT_TEMPLATE = PromptTemplate(
-    template=prompts.rag_text_prompts[2],
+# NO_RAG_PROMPT_TEMPLATE = PromptTemplate(
+#     template=prompts.rag_text_prompts[2],
+#     input_variables=["question"]
+# )
+
+NO_RAG_NAIVE_PROMPT_TEMPLATE = PromptTemplate(
+    template= """
+    You are an assistant for question-answering tasks.
+    Please answer the following question. Use no more than 
+    three sentences for your answer.
+
+    Question: {question}
+
+    Answer:
+    """,
     input_variables=["question"]
 )
+
+NO_RAG_PROMPT_TEMPLATE = PromptTemplate(
+    template= """
+    You are an assistant for question-answering tasks.
+    Use ten words maximum and keep the answer concise.
+
+    Question: {question}
+
+    Answer:
+    """,
+    input_variables=["question"]
+)
+ 
+
+BASIC_RAG_NAIVE_PROMPT_TEMPLATE = PromptTemplate(
+    template="""
+    You are an assistant for question-answering tasks.
+    Please only use the following pieces of retrieved context 
+    to answer the question. Use no more than three sentences 
+    for your answer.
+
+    Question: {question}
+    Context: {context}
+
+    Answer:
+    """,
+    input_variables=["context", "question"]
+)
+
 
 BASIC_RAG_PROMPT_TEMPLATE = PromptTemplate(
     template="""
@@ -42,26 +83,6 @@ BASIC_RAG_HYDE_PROMPT_TEMPLATE = PromptTemplate(
     template=prompts.hyde_prompts[1],
     input_variables=["question"]
 )
-
-# BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
-#     template="""
-#         You are an assistant for validating answers to questions.
-#         You are given the following question and context:
-
-#         Question: {question}
-#         Context: {context}
-
-#         Furthermore, you are given a potential answer to the question:
-
-#         Answer: {answer}
-
-#         Please provide a score between 0 and 1, where 0 means that the answer is completely wrong
-#         and 1 means that the answer is completely correct. Please use the given context to
-#         determine the score.
-
-#     """,
-#     input_variables=["context", "question", "answer"]
-# )
 
 llm_as_judge_prompt = """
 
@@ -134,11 +155,6 @@ Your Judgment: (Yes/No, Score)
 
 """
 
-# BASIC_RAG_SUPPRESS_ANSWERS_PROMPT_TEMPLATE_2 = PromptTemplate(
-#     template=llm_as_judge_prompt_1,
-#     input_variables=["context", "question", "answer"]
-# )
-
 BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
     template=llm_as_judge_prompt,
     input_variables=["context", "question", "answer"]
@@ -146,7 +162,9 @@ BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
 
 
 query_prompts = [
+    NO_RAG_NAIVE_PROMPT_TEMPLATE,
     NO_RAG_PROMPT_TEMPLATE,
+    BASIC_RAG_NAIVE_PROMPT_TEMPLATE,
     BASIC_RAG_PROMPT_TEMPLATE,
     BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE,
     BASIC_RAG_HYDE_PROMPT_TEMPLATE,
