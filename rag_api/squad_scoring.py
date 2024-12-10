@@ -225,7 +225,9 @@ def compute_exact(a_gold, a_pred):
 def compute_f1(a_gold, a_pred):
     """
     Computes the f1 score, based on the gold answer and the predicted answer. The computation uses
-    precision and recall. Here is an explanation of both terms:
+    precision and recall. It also computes the Jaccard similarity.
+    
+    Here is an explanation of all terms:
 
     Precision measures the proportion of correctly predicted tokens (or words) from the total tokens
     predicted as part of the answer. In other words:
@@ -236,6 +238,12 @@ def compute_f1(a_gold, a_pred):
     that are part of the gold answer. In other words:
 
     Recall = (number of correctly predicted tokens) / (number of total tokens in the gold answer)
+
+    The Jaccard similarity score is a measure of the similarity between the gold answer and the predicted
+    answer. It is calculated as follows:
+
+    Jaccard = (number of correctly predicted tokens) / 
+              (number of total tokens in the gold answer + number of total tokens in the predicted answer)
 
     The F1 score is the harmonic mean of precision and recall. It is calculated as follows:
 
@@ -253,6 +261,7 @@ def compute_f1(a_gold, a_pred):
         dicionary (float, float, float):
             - precision: the precision score
             - recall: the recall score
+            - jaccard: the jaccard similarity score
             - f1 score: the formula is (2 * precision * recall) / (precision + recall))
                         (the harmonic mean of precision and recall)
 
@@ -269,23 +278,26 @@ def compute_f1(a_gold, a_pred):
     # minimum number of occurrences for each common token. The sum of these values is the number
     # of correctly predicted tokens.
     common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
+    union_toks = collections.Counter(gold_toks) | collections.Counter(pred_toks)
     correctly_predicted_tokens_cnt = sum(common.values())
+    union_toks_cnt = sum(union_toks.values())
 
     if len(gold_toks) == 0 or len(pred_toks) == 0:
         # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
         # TODO --> check if this is correct
         agree = (gold_toks == pred_toks)
-        return {"precision": int(agree), "recall": int(agree), "f1": int(agree)}
+        return {"precision": int(agree), "recall": int(agree), "jaccard": int(agree), "f1": int(agree)}
         #return int(gold_toks == pred_toks)
     if correctly_predicted_tokens_cnt == 0:
-        return {"precision": 0.0, "recall": 0.0, "f1": 0.0}
+        return {"precision": 0.0, "recall": 0.0, "jaccard": 0.0, "f1": 0.0}
 
-    # Calculate the f1 score
+    # Calculate the f1 and other scores
     precision = 1.0 * correctly_predicted_tokens_cnt / len(pred_toks)
     recall = 1.0 * correctly_predicted_tokens_cnt / len(gold_toks)
+    jaccard = 1.0 * correctly_predicted_tokens_cnt / union_toks_cnt
     f1 = (2 * precision * recall) / (precision + recall)
 
-    scores_dict = {"precision": precision, "recall": recall, "f1": f1}
+    scores_dict = {"precision": precision, "recall": recall, "jaccard": jaccard, "f1": f1}
     return scores_dict
 
 
@@ -304,7 +316,8 @@ def get_raw_scores(dataset, preds):
 
       exact_scores (dictionary): for each question, the exact score (either 0 or 1)
       precision_scores (dictionary): for each question, the precision score (a value between 0 and 1)
-      recall_scores (dictionary): for each question, the recall score (a value between 0 and 1)      
+      recall_scores (dictionary): for each question, the recall score (a value between 0 and 1)   
+      jaccard_scores (dictionary): for each question, the Jaccard similarity score (a value between 0 and 1)   
       f1_scores (dictionary): for each question, the f1 score (a value between 0 and 1)
 
     """
@@ -312,6 +325,7 @@ def get_raw_scores(dataset, preds):
     exact_scores = {}
     precision_scores = {}
     recall_scores = {}
+    jaccard_scores = {}
     f1_scores = {}
 
     for article in dataset:
@@ -344,9 +358,10 @@ def get_raw_scores(dataset, preds):
                 # TODO: refactor, since for loop is executed three times!
                 precision_scores[qid] = max(compute_f1(a, a_pred)["precision"] for a in gold_answers)
                 recall_scores[qid] = max(compute_f1(a, a_pred)["recall"] for a in gold_answers)
+                jaccard_scores[qid] = max(compute_f1(a, a_pred)["jaccard"] for a in gold_answers)
                 f1_scores[qid] = max(compute_f1(a, a_pred)["f1"] for a in gold_answers)
 
-    return exact_scores, precision_scores, recall_scores, f1_scores
+    return exact_scores, precision_scores, recall_scores, jaccard_scores, f1_scores
 
 
 # =================================================================================================
@@ -389,9 +404,10 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
 
 
 # =================================================================================================
-def make_eval_dict(exact_scores, precision_scores, recall_scores, f1_scores, qid_list=None):
+def make_eval_dict(exact_scores, precision_scores, recall_scores, jaccard_scores, f1_scores, qid_list=None):
     """
-    Constructs the dictionary that holds the EM, precision, reacall and F1 scores for the complete predictions data set
+    Constructs the dictionary that holds the EM, precision, recall, Jaccard similarity and F1 scores for the
+    complete predictions data set.
     # TODO: change example to include precision and recall scores as well
     example output of the function: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
 
@@ -400,14 +416,15 @@ def make_eval_dict(exact_scores, precision_scores, recall_scores, f1_scores, qid
       exact_scores (dictionary)     : contains the exact scores, one per question (id)
       precision_scores (dictionary) : contains the precision scores, one per question (id)
       recall_scores (dictionary)    : contains the recall scores, one per question (id)
+      jaccard_scores (dictionary)   : contains the Jaccard similarity scores, one per question (id)
       f1_scores (dictionary)        : contains the f1 scores, one per question (id)
       qid_list (list)               : list of question ids of the questions to be evaluated
 
     Returns:
 
-      dictionary: dict that holds the final EM, precision, recall and F1 scores for the whole predictions
-                  dataset and the total number of questions. EM, precision, recall and F1 scores are averages
-                  over all corresponding scores in the dictionaries.
+      dictionary: dict that holds the final EM, precision, recall, jaccard scores and F1 scores for the whole
+                  predictions dataset and the total number of questions. EM, precision, recall, jaccard and 
+                  F1 scores are averages over all corresponding scores in the dictionaries.
     """
 
     if not qid_list: # compute scores for all questions
@@ -416,6 +433,7 @@ def make_eval_dict(exact_scores, precision_scores, recall_scores, f1_scores, qid
             ('exact', 100.0 * sum(exact_scores.values()) / total),
             ('precision', 100.0 * sum(precision_scores.values()) / total),
             ('recall', 100.0 * sum(recall_scores.values()) / total),
+            ('jaccard', 100.0 * sum(jaccard_scores.values()) / total),
             ('f1', 100.0 * sum(f1_scores.values()) / total),
             ('total', total),
         ])
@@ -425,6 +443,7 @@ def make_eval_dict(exact_scores, precision_scores, recall_scores, f1_scores, qid
             ('exact', 100.0 * sum(exact_scores[k] for k in qid_list) / total),
             ('precision', 100.0 * sum(precision_scores[k] for k in qid_list) / total),
             ('recall', 100.0 * sum(recall_scores[k] for k in qid_list) / total),
+            ('jaccard', 100.0 * sum(jaccard_scores[k] for k in qid_list) / total),
             ('f1', 100.0 * sum(f1_scores[k] for k in qid_list) / total),
             ('total', total),
         ])
@@ -658,7 +677,7 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
       - all questions in preds that don't have answers
 
     It also generates additional statistics and plots precision-recall curves if an additional
-    na_prob.json file is provided or is no answer probabilities are simulated (plots arestored in 
+    na_prob.json file is provided or if no answer probabilities are simulated (plots arestored in 
     "OPTS.image_dir"). This file is expected to map qid's to the model's predicted probability 
     that a question is unanswerable.
 
@@ -676,12 +695,13 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
 
     Returns:
 
-      out_eval (dictionary): dictionary that holds EM and F1 scores as well as totals for
+      out_eval (dictionary): dictionary that holds EM, F1 and Jaccard scores as well as totals for
                             the complete set of questions, for the subset of questions that
                             have answers and for the subset of questions that do not have
                             answers
 
     Example output:
+    # TODO: update example output to include Jaccard scores
 
     OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
     'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
@@ -713,7 +733,7 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
 
     # Get the EM and F1 scores for all predicted answers for the questions
     # "raw" means no threshold yet applied
-    exact_raw, precision_raw, recall_raw, f1_raw = get_raw_scores(dataset, preds)
+    exact_raw, precision_raw, recall_raw, jaccard_raw, f1_raw = get_raw_scores(dataset, preds)
 
     # Update exact and f1 scores based on threshold (#TODO: describe exactly how)
     # exact_thresh and f1_thresh are also dictionaries with the question id's as 
@@ -721,13 +741,15 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0)
     precision_thresh = apply_no_ans_threshold(precision_raw, na_probs, qid_to_has_ans, 1.0)
     recall_thresh = apply_no_ans_threshold(recall_raw, na_probs, qid_to_has_ans, 1.0)
+    jaccard_thresh = apply_no_ans_threshold(jaccard_raw, na_probs, qid_to_has_ans, 1.0)
     f1_thresh = apply_no_ans_threshold(f1_raw, na_probs, qid_to_has_ans, 1.0)
     
-    # Construct the dictionary that holds the EM, precision, recall and F1 scores for the complete predictions data set
+    # Construct the dictionary that holds the EM, precision, recall, Jaccard and F1 scores for the complete predictions data set
     # example for out_eval: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
+    # TODO: update this example to include Jaccard
     if OPTS.verbose:
         print("\nGetting metrics for all questions...")
-    out_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, f1_thresh, has_pred_qids)
+    out_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, jaccard_thresh, f1_thresh, has_pred_qids)
 
     # Construct the dictionary using only the questions that have answers
     # Then merge this into the out_eval dictionary
@@ -735,7 +757,7 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     if has_ans_intersection_qids:
         if OPTS.verbose:
             print("Getting metrics for questions that have answers...")
-        has_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh,
+        has_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, jaccard_thresh,
                                       f1_thresh, has_ans_intersection_qids)
         merge_eval(out_eval, has_ans_eval, 'HasAns')
     else:
@@ -749,13 +771,16 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     if no_ans_intersection_qids:
         if OPTS.verbose:
             print("Getting metrics for questions with no answers...")
-        no_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, 
+        no_ans_eval = make_eval_dict(exact_thresh, precision_thresh, recall_thresh, jaccard_thresh,
                                      f1_thresh, qid_list=list(set(has_pred_qids) & set(no_ans_qids)))
         merge_eval(out_eval, no_ans_eval, 'NoAns')
     else:
         if OPTS.verbose:
             print("Cannot get metrics for questions that don't have answers. There are none in preds...")
 
+    # TODO --> update this section to include Jaccard scores
+    # Currently, we do not use na_prob_file or na_prob_sim
+    # but this should work as well in the future
     if OPTS.na_prob_file or OPTS.na_prob_sim:
         if OPTS.verbose:
             print("Finding best thresholds...")
