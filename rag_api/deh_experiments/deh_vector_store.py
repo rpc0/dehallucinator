@@ -1,6 +1,7 @@
 # ==========================================================================
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_text_splitters import CharacterTextSplitter
 # from langchain_experimental.text_splitter import SemanticChunker
 from langchain_core.documents import Document
 from deh_semantic_chunking import SemanticChunker
@@ -33,7 +34,12 @@ def get_vector_store(prefix, chunking_method):
 # ==========================================================================
 def get_splitter(chunking_method, chunk_size, chunk_overlap):
 
-    if chunking_method in ["naive", "per_context", "per_article"]:
+    if chunking_method == "naive":
+        return CharacterTextSplitter(
+            chunk_size=chunk_size,
+            chunk_overlap=chunk_overlap
+        )
+    if chunking_method in ["per_context", "per_article"]:
         return RecursiveCharacterTextSplitter(
             chunk_size=chunk_size,
             chunk_overlap=chunk_overlap
@@ -105,7 +111,7 @@ def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=5
     for chunking_method in chunking_methods:
 
         # # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
-        if not chunking_method == "per_article":
+        if not chunking_method == "naive":
             continue
         
         print(f"Chunking method: {chunking_method}")

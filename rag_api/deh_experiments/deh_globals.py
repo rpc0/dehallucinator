@@ -23,8 +23,10 @@ CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 100
 DEFAULT_CHROMA_PREFIX = "deh_rag"
 #DEFAULT_CHUNKING_METHOD = "pseudo_semantic"
-DEFAULT_CHUNKING_METHOD = "per_article"
-DEFAULT_SEMANTIC_CHUNKING_METHOD = "pseudo_semantic"
+DEFAULT_CHUNKING_METHOD = "naive"
+# DEFAULT_CHUNKING_METHOD = "naive"
+#DEFAULT_SEMANTIC_CHUNKING_METHOD = "pseudo_semantic"
+DEFAULT_SEMANTIC_CHUNKING_METHOD = "naive"
 
 CHUNK_SQUAD_DATASET = False        # Set to True to vectorize the squad dataset. If False,
                                    # then the documents and their embeddings should already
@@ -39,7 +41,7 @@ REFRESH_HYDE_CONTEXTS = False       # Set to True to create hyde contexts; if Fa
 RESTORE_QAS_WITH_CONTEXTS = False
 
 # # Bootstrap Parameters
-SAMPLE_SIZE = 10
+SAMPLE_SIZE = 300
 BOOTSTRAPS_N = 10000
 
 # Timing

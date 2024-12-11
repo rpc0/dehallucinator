@@ -19,6 +19,21 @@ NO_RAG_NAIVE_PROMPT_TEMPLATE = PromptTemplate(
     input_variables=["question"]
 )
 
+NO_RAG_NAIVE_DONT_LIE_PROMPT_TEMPLATE = PromptTemplate(
+    template="""
+    You are an assistant for question-answering tasks.
+    Please answer the following question. If you don't know 
+    the answer, just return the text 'DONT KNOW'. Don't add
+    any other text to that, just return 'DONT KNOW' on its own line.
+    Use no more than three sentences for your answer.
+
+    Question: {question}
+
+    Answer:
+    """,
+    input_variables=["question"]
+)
+
 NO_RAG_PROMPT_TEMPLATE = PromptTemplate(
     template= """
     You are an assistant for question-answering tasks.
@@ -32,7 +47,7 @@ NO_RAG_PROMPT_TEMPLATE = PromptTemplate(
 )
  
 
-BASIC_RAG_NAIVE_PROMPT_TEMPLATE = PromptTemplate(
+BASIC_RAG_3S_PROMPT_TEMPLATE = PromptTemplate(
     template="""
     You are an assistant for question-answering tasks.
     Please only use the following pieces of retrieved context 
@@ -63,12 +78,31 @@ BASIC_RAG_PROMPT_TEMPLATE = PromptTemplate(
     input_variables=["context", "question"]
 )
 
+
+BASIC_RAG_DONT_LIE_3SENTENCES_PROMPT_TEMPLATE = PromptTemplate(
+    template="""
+        You are an assistant for question-answering tasks.
+        Use the following pieces of retrieved context to answer the question.
+        If you don't know the answer, just return the text 'DONT KNOW'. Don't add
+        any other text to that, just return 'DONT KNOW' on its own line. 
+        If you know the answer, use no more than three sentences 
+        for your answer.
+
+        Question: {question}
+        Context: {context}
+
+        Answer:
+        """,
+    input_variables=["context", "question"]
+)
+
+
 BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE = PromptTemplate(
     template="""
         You are an assistant for question-answering tasks.
         Use the following pieces of retrieved context to answer the question.
         If you don't know the answer, just return the text 'DONT KNOW'. Don't add
-        any other text to that, just 'DONT KNOW' on its own line. 
+        any other text to that, just return 'DONT KNOW' on its own line. 
         If you know the answer, use ten words maximum and keep the answer concise.
 
         Question: {question}
@@ -76,6 +110,22 @@ BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE = PromptTemplate(
 
         Answer:
         """,
+    input_variables=["context", "question"]
+)
+
+BASIC_RAG_HYDE_NAIVE_PROMPT_TEMPLATE = PromptTemplate(
+    template="""
+        You are an assistant for question-answering tasks.
+        Please only use the following pieces of retrieved context 
+        to answer the question. Use no more than three sentences 
+        for your answer and keep the answer concise.
+
+        Question: {question}
+        Context: {context}
+
+        Answer:
+
+    """,
     input_variables=["context", "question"]
 )
 
@@ -163,10 +213,13 @@ BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
 
 query_prompts = [
     NO_RAG_NAIVE_PROMPT_TEMPLATE,
+    NO_RAG_NAIVE_DONT_LIE_PROMPT_TEMPLATE,
     NO_RAG_PROMPT_TEMPLATE,
-    BASIC_RAG_NAIVE_PROMPT_TEMPLATE,
+    BASIC_RAG_3S_PROMPT_TEMPLATE,
     BASIC_RAG_PROMPT_TEMPLATE,
+    BASIC_RAG_DONT_LIE_3SENTENCES_PROMPT_TEMPLATE,
     BASIC_RAG_DONT_LIE_PROMPT_TEMPLATE,
+    BASIC_RAG_HYDE_NAIVE_PROMPT_TEMPLATE,
     BASIC_RAG_HYDE_PROMPT_TEMPLATE,
     BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE
 ]
