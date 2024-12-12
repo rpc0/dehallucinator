@@ -13,7 +13,7 @@ services:
   # https://cookbook.chromadb.dev/running/running-chroma/#docker
   chromadb:
     container_name: chromadb
-    image: chromadb/chroma:0.5.11
+    image: chromadb/chroma:latest
     volumes:
       - ./chroma:/chroma/chroma
     environment:
