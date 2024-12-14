@@ -31,7 +31,7 @@ llm_models = [LLM_MODEL_NAME_0, LLM_MODEL_NAME_1, LLM_MODEL_NAME_2,
 
 judge_llms = [MISTRAL_LATEST, GEMMA2_9B, QWEN2_5_7B]
 
-JUDGES_SUPPRESS_THRESHOLD = 0.70
+JUDGES_SUPPRESS_THRESHOLD = 0.7
 
 
 # ===================================================================

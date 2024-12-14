@@ -2,14 +2,11 @@
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_text_splitters import CharacterTextSplitter
-# from langchain_experimental.text_splitter import SemanticChunker
 from langchain_core.documents import Document
 from deh_semantic_chunking import SemanticChunker
 from langchain_ollama import OllamaEmbeddings
 import deh_globals
-# globals().update(deh_globals.__dict__)
 
-# DATA_ROOT = "../../../deh_data_results/data"         # Set to your own data folder
 CHROMA_ROOT = "../../../deh_data_results/chroma"     # Set to your own chroma folder
 ollama_embedding_model = "avr/sfr-embedding-mistral"
 embeddings = OllamaEmbeddings(model=ollama_embedding_model)
@@ -21,7 +18,7 @@ def get_vector_store(prefix, chunking_method):
 
     # TODO: currently, vector store and collection name are the same, and
     #       each collection is stored in its own chromadb.
-    # Ultimately, all collections should be stored in the same chromadb.
+    # Ultimately, all collections can be stored in the same chromadb.
     collection_name = f"{prefix}_{chunking_method}"
     print(f"Will now get the following vector store: {persist_directory}" + f"_{chunking_method}")
     return Chroma(
@@ -110,13 +107,7 @@ def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=5
 
     for chunking_method in chunking_methods:
 
-        # # # TODO: Remove this IF STATEMENT, once semantic chunking works !!!!
-        if not chunking_method == "naive":
-            continue
-        
         print(f"Chunking method: {chunking_method}")
-        # collection_name = f"deh_rag_{chunking_method}"
-        # print(f"Collection name: {collection_name}")
 
         vector_store = get_vector_store("deh_rag", chunking_method)
         chunks = chunk_contexts(squad_contexts, chunking_method, chunk_size, chunk_overlap, dataset)

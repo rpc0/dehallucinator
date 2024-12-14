@@ -22,10 +22,7 @@ VECTOR_STORE_TOP_K = VECTOR_STORE_TOP_K_L[3]
 CHUNK_SIZE = 1000
 CHUNK_OVERLAP = 100
 DEFAULT_CHROMA_PREFIX = "deh_rag"
-#DEFAULT_CHUNKING_METHOD = "pseudo_semantic"
 DEFAULT_CHUNKING_METHOD = "naive"
-# DEFAULT_CHUNKING_METHOD = "naive"
-#DEFAULT_SEMANTIC_CHUNKING_METHOD = "pseudo_semantic"
 DEFAULT_SEMANTIC_CHUNKING_METHOD = "naive"
 
 CHUNK_SQUAD_DATASET = False        # Set to True to vectorize the squad dataset. If False,
@@ -36,7 +33,7 @@ CHUNK_SQUAD_DATASET = False        # Set to True to vectorize the squad dataset.
 REFRESH_QUESTION_CONTEXTS = False   # Set to True to create question contexts from the vector store; 
                                     # if False, the question contexts are loaded from a csv file.
 REFRESH_HYDE_CONTEXTS = False       # Set to True to create hyde contexts; if False,
-#                                   # the hyde contexts are loaded from a csv file.                                    
+                                    # the hyde contexts are loaded from a csv file.                                    
 
 RESTORE_QAS_WITH_CONTEXTS = False
 
@@ -49,9 +46,3 @@ execution_times_l = []
 
 # Dataframe to store the experiments
 df_experiments = pd.DataFrame(deh_experiments_config.experiments).T
-
-# #TODO check if setting the seed makes sense
-# # SEED = 42
-# # set_seed = random.seed(SEED)
-
-# PERSIST_ANSWER_SAMPLES = False   # Set to True to persist the llm answers for each sample, for each experiment

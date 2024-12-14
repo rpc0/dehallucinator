@@ -284,10 +284,8 @@ def compute_f1(a_gold, a_pred):
 
     if len(gold_toks) == 0 or len(pred_toks) == 0:
         # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
-        # TODO --> check if this is correct
         agree = (gold_toks == pred_toks)
         return {"precision": int(agree), "recall": int(agree), "jaccard": int(agree), "f1": int(agree)}
-        #return int(gold_toks == pred_toks)
     if correctly_predicted_tokens_cnt == 0:
         return {"precision": 0.0, "recall": 0.0, "jaccard": 0.0, "f1": 0.0}
 

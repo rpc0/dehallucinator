@@ -1,11 +1,6 @@
 from langchain.prompts import PromptTemplate
 import prompts
 
-# NO_RAG_PROMPT_TEMPLATE = PromptTemplate(
-#     template=prompts.rag_text_prompts[2],
-#     input_variables=["question"]
-# )
-
 NO_RAG_NAIVE_PROMPT_TEMPLATE = PromptTemplate(
     template= """
     You are an assistant for question-answering tasks.
@@ -209,7 +204,6 @@ BASIC_RAG_LLM_AS_A_JUDGE_TEMPLATE = PromptTemplate(
     template=llm_as_judge_prompt,
     input_variables=["context", "question", "answer"]
 )
-
 
 query_prompts = [
     NO_RAG_NAIVE_PROMPT_TEMPLATE,
