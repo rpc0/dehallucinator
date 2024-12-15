@@ -10,7 +10,14 @@ As part of Harvard DCE Data Science Capstone (CSCI E-599a) this provides impleme
 
 ## Developer Setup
 
-Project components are deployed via Docker containers with Docker-Compose orchestration.  High-level development architecture can be viewed [here](docs/docker_architecture.pptx) and additional details on specific Dockerized modules can be viewed [here](docs/docker_containers.md).  Module specific local development instructions can be found in READMEs within sub-project folders (e.g. [measurement](./measurement/), [rag_api](./rag_api/), and [ui](./ui/) respectively).
+Project components are deployed via Docker containers with Docker-Compose orchestration.  High-level development architecture can be viewed [here](docs/docker_architecture.pptx) and additional details on specific Dockerized modules can be viewed [here](docs/docker_containers.md).  
+
+Additional README instructions can be found for:
+
+* Terraform setup instructions for EC2 instance use [README](./terraform/README.md)
+* GitHub Action testing and development environment [README](./.github/README.md)
+
+Module specific local development instructions can be found in READMEs within sub-project folders (e.g. [measurement](./measurement/), [rag_api](./rag_api/), and [ui](./ui/) respectively).
 
 ### IDE (Optional - VS Code)
 
@@ -31,7 +38,7 @@ For Windows-based developers it is recommended that you [install WSL](https://le
 
 ### AWS Instances
 
-For convenience [Terraform modules](./terraform/) are also provided to create AWS EC2 instances where local GPU-based development capabilites are not available.
+For convenience [Terraform modules](./terraform/) are also provided to create AWS EC2 instances where local GPU-based development capabilites are not available.  VSCode remote plugin can be used with EC2 environment simliar to WSL setup.  Specifics of EC2 environment setup can be found in [initialization template](./terraform/deh_ec2.tftpl).
 
 ### Docker installation
 
@@ -86,12 +93,13 @@ The [BuildX plugin](https://github.com/docker/buildx) brings additional Build fu
 The DEH environment can be launched via Docker Compose via the following:
 
 ```bash
-./dehallucinator> docker-compose -f docker-compose-gpu.yml build
-./dehallucinator> docker-compose -f docker-compose-gpu.yml up
+./dehallucinator> docker-compose -f docker-compose.yml build
+./dehallucinator> docker-compose -f docker-compose.yml up
 ```
 
 **Note:** Command run from root directory of the code-base - e.g. the 'dehallucinator' directory that contains the docker-compose.yml file
 **Note:** Cntrl+C can be used to shutdown all running containers in attached mode.  Alternatively `docker-compose down` can be executed.
+**Note:** `docker-compose.yml` is the default GPU enabled configuration.  Other configurations like `docker-compose-cpu.yml` could be chosen if desired.
 
 Upon successful execution of docker-compose command you should see status of component launches and output of container logs:
 
@@ -247,7 +255,7 @@ exp_df.to_pickle( f"{experiment_folder}/experiment_file_name.pkl" )
 
 ## QA DataSet
 
-An evaluation file should have a CSV structure simliar to the below.
+An evaluation result file should have a CSV structure simliar to the below.
 
 *QA elements:*
 
@@ -258,9 +266,11 @@ An evaluation file should have a CSV structure simliar to the below.
 
 *Evaluation metrics:*
 
-* answer_similiarity - the cosine similarity of answer and ground truth embeddings
+Different experiments may produce different output metrics.  Examples of some common ones include:
 
-**TODO:** Add more information on output measures.
+* answer_similiarity - the cosine similarity of answer and ground truth embeddings
+* F1 score - the harmonic mean of precision and recall measurement
+* response_time - the time for API to return response
 
 *RAG and Assessment Hyper-Parameter elements:*
 
@@ -270,6 +280,18 @@ An evaluation file should have a CSV structure simliar to the below.
 * docs_loaded - number of context docs loaded into Vector Store
 * assessment_llm - LLM model used in assessment for LLM-as-judge measurement
 * assessment_embedding - Embedding model used in assessment for embedding comparison
+
+*Many hyper-parameters can be directly controlled via API endpoint:*
+
+* t - temperature of the LLM model
+* e - true/false if evaluation functionality will be enabled
+* h - true/false if HYDE context query expansion will be enabled
+* m - model name to use for LLM
+* k - number of contexts to retrieve
+
+An example url could be: <server_ip>/answer?q=<user_query>&t=0.5&e=false&h=false&k=5.
+
+API code can be reviewed to view all parameters and associated defaults, etc.
 
 ## Developer Best Practices
 
