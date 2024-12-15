@@ -13,8 +13,24 @@ BASIC_RAG_HYDE_NAIVE_PROMPT_IDX = 7
 BASIC_RAG_HYDE_PROMPT_IDX = 8
 BASIC_RAG_LLMAS_JUDGE_PROMPT_IDX = 9
 
-# EXPERIMENT_GLOBAL_ID = "P1_F2"
 
+# ======== Dictionary that contains all experiments definitions ==================
+# Each experiment corresponds to an entry in this dictionary. An alternative to 
+# this approach would be to read in experiments configuration information from 
+# a text-based configuration file. Each experiment defintion is a dictionary itself.
+# It contains the following information:
+#
+# name:                     The name of the experiment (serves as an ID)
+# title:                    The title (used for the histograms)
+# sample_ldicts_idx         
+#
+# 
+#
+#
+# 
+#
+#
+# 
 experiments = {}
 
 # ============================== Pass 1 ==========================================
@@ -27,7 +43,7 @@ experiments["P1_F1_K2"] = {
     "context_needed": True,
     "hyde_context_needed": False,
     "suppress_answers": False,
-    "judges_suppress_threshold": 0.7,    
+    "judges_suppress_threshold": 0.7,
     "chunking_method": "naive",
     "vector_store_top_k": 2,
     "llm_model": "llama3.1",
@@ -42,7 +58,7 @@ experiments["P1_F1_K5"] = {
     "context_needed": True,
     "hyde_context_needed": False,
     "suppress_answers": False,
-    "judges_suppress_threshold": 0.7,    
+    "judges_suppress_threshold": 0.7,
     "chunking_method": "naive",
     "vector_store_top_k": 5,
     "llm_model": "llama3.1",
@@ -709,6 +725,3 @@ experiments["FINAL_FINAL_RAG_TR_90"] = {
     "temperature": 0.5
 }
 
-# =====================================================================================
-
-current_experiment = experiments["FINAL_FINAL_RAG_TR_90"]
