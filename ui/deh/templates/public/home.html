@@ -28,12 +28,28 @@
         background-color: #6d2976 !important;
         outline-color: #6d2976 !important;
     }
+    .option {
+        display: inline-block;
+        width: 200px;
+    }
+    output {
+        padding-left: 5px;
+        color: blue;
+        font-size: small;
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Page Content -->
 <div class="question-block borders" style="text-align:right;">
+    <div style="color:white; text-align:right; padding-bottom:5px;">Advanced Options <img src="/static/imgs/up-chevron.png" onclick="toggle_options(this)"/></div>
+    <div id="advanced_options" style="color: white;text-align:left;padding-bottom:5px; display:none;">
+        <div><span class="option">temperature:</span><input type="range" name="t" id="t" min="0" max="1" step="0.25" value="0.5" oninput="this.nextElementSibling.value = this.value"/><output></output></div>
+        <div><span class="option">number of contexts:</span><input type="range" name="k" id="k" min="0" max="25" step="1" value="5" oninput="this.nextElementSibling.value = this.value"/><output></output></div>
+        <div><span class="option">HYDE enabled:</span><input type="checkbox" name="h" id="h" checked/></div>
+        <div><span class="option">AI Evaluation enabled:</span><input type="checkbox" name="e" id="e" checked/></div>
+    </div>
     <textarea
         id="query"
         placeholder="How can I help you?"
@@ -115,12 +131,31 @@ axios.defaults.baseURL = '/api/';
 // API functional call:
 var response_cache;
 function query() {
+    
+    // Query Parameters:
+    q = $("#query").val()
+    h = $("#h").val() == "on"
+    e = $("#e").val() == "on"
+    t = $("#t").val()
+    k = $("#k").val()
+
+    // Guard statement:
+    if (q == "") {
+        alert ("Please provide a query.")
+        return
+    }
+    
     // Display Query Response block (with loading indicator)
     $("#query-response").css("display", "block")
     $("#query-loading").css("display", "block")
     $("#answer").css("display", "none")
-    
-    axios.get('/answer?h=false&e=true&q=' + encodeURI($("#query").val()))
+
+    console.log("h=" + h + ", e=" + e + ", t=" + t +",k=" + k)
+    query_str = '/answer?h='+h+'&e='+e+'&t='+t+'&k='+k +'&q=' + encodeURI(q)
+    console.log(query_str)
+
+    // Execute Query:
+    axios.get(query_str)
         .then(function (response) {
             var json_response = response.data;
             console.log(json_response);
