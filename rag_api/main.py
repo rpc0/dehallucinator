@@ -95,7 +95,12 @@ def guardrail_api(api_endpoint):
     @wraps(api_endpoint)
     async def wrapper(*args, **kwargs):
         try:
-            return await api_endpoint(*args, **kwargs)
+            start = time.time()
+            api_response = await api_endpoint(*args, **kwargs)
+            end = time.time()
+            # Add response_time attribute:
+            api_response["response"]["response_time"] = end - start
+            return api_response
         except guardrail.GuardRailException as gexc:
             logger.info("GuardRailException: " + ",".join(gexc.args))
             response = {"errors": gexc.args, "system_settings": get_settings()}

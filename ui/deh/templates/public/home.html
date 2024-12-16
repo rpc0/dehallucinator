@@ -32,6 +32,10 @@
         display: inline-block;
         width: 200px;
     }
+    .setting_lbl {
+        display: inline-block;
+        width: 300px;
+    }
     output {
         padding-left: 5px;
         color: blue;
@@ -139,7 +143,16 @@
             <div id="context-details" style="font-size:small"></div>
         </div>
 
+        <!--System Settings-->
+        <div id="system_diagnostics" style="padding-bottom: 15px;">
+            <div class="diagnostic_header">System Settings</div>
+            <span class="setting_lbl">Response Speed:</span><span class="system_setting" id ="setting_response_speed">N/A</span><br/>
+            <span class="setting_lbl">LLM Temperature:</span><span class="system_setting" id ="setting_temperature">N/A</span><br/> 
+            <span class="setting_lbl">LLM Model:</span><span class="system_setting" id ="setting_model_name">N/A</span><br/>
+            <span class="setting_lbl">Context Repository Size:</span><span class="system_setting" id ="setting_docs_cnt">N/A</span><br/>
+        </div>
         
+
     </div>
 </div>
 
@@ -228,8 +241,13 @@ function display_diagnostics(json_response) {
     } else {
         $("#ai_evaluation_diagnostics").css("display", "none")
     }
-    
-    //evaluation.innerHTML = answer_text.response.evaluation.grade + "<br/><br/> " + answer_text.response.evaluation.description
+
+    // System Setting Diagnostics
+    $("#setting_response_speed").html(json_response.response.response_time)
+    $("#setting_temperature").html(json_response.response.temperature)
+    $("#setting_model_name").html(json_response.response.model_name)
+    $("#setting_docs_cnt").html(json_response.system_settings.docs_loaded)
+
 }
 
 </script>
