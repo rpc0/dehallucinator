@@ -1,3 +1,10 @@
+"""
+
+Contains information and settings related to the LLM models that are used
+for the experiments.
+
+"""
+
 from langchain_ollama import ChatOllama
 
 # ===================================================================

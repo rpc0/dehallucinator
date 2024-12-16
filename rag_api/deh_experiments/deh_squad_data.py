@@ -1,12 +1,15 @@
+"""
+
+Used for loading SQuAD data.
+
+# TODO: is redundant and code should be refactored to no longer use this module.
+
+"""
 
 import csv
 import json
 
-# from ..squad_scoring import load_dataset
-
 DATA_ROOT = "/home/spiro/Studium/Harvard/00_Capstone/deh_data_results/data"  # Set to your own data folder
-# RESULTS_ROOT = "../../../deh_data_results/results"   # Set to your own results folder
-# HYDE_BASED_CONTEXTS_ROOT = F"{DATA_ROOT}/hyde_based_contexts"   # Set to your own hyde-based contexts folder
 
 
 # =================================================================================================

@@ -1,3 +1,9 @@
+"""
+
+Contains prompt definitions that are used in the experiments.
+
+"""
+
 from langchain.prompts import PromptTemplate
 import prompts
 

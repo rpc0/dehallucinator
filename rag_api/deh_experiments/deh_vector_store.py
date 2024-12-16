@@ -1,3 +1,9 @@
+"""
+
+Contains data and methods related to the vector store (Chroma is used here).
+
+"""
+
 # ==========================================================================
 from langchain_chroma import Chroma
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -7,13 +13,15 @@ from deh_semantic_chunking import SemanticChunker
 from langchain_ollama import OllamaEmbeddings
 import deh_globals
 
-CHROMA_ROOT = "../../../deh_data_results/chroma"     # Set to your own chroma folder
+CHROMA_ROOT = "../../../deh_data_results/chroma"     # Set to your own root chroma folder
 ollama_embedding_model = "avr/sfr-embedding-mistral"
 embeddings = OllamaEmbeddings(model=ollama_embedding_model)
 persist_directory = f"{CHROMA_ROOT}/chroma/chroma_deh_rag_db_k{deh_globals.VECTOR_STORE_TOP_K}_cs{deh_globals.CHUNK_SIZE}"
 
 
 # ==========================================================================
+# Gets the vector store for an experiment
+
 def get_vector_store(prefix, chunking_method):
 
     # TODO: currently, vector store and collection name are the same, and
@@ -29,6 +37,8 @@ def get_vector_store(prefix, chunking_method):
 
 
 # ==========================================================================
+# Gets a splitter, depending on the chunking method.
+
 def get_splitter(chunking_method, chunk_size, chunk_overlap):
 
     if chunking_method == "naive":
@@ -53,6 +63,11 @@ def get_splitter(chunking_method, chunk_size, chunk_overlap):
 
 
 # ==========================================================================
+# Chunks all the contexts contained in the first parameter, which is a list.
+# Note that the term "context" designates the SQuAD contexts, as read from
+# the raw sqaud file (not to be confused with the contexts returned by the
+# vector store).
+
 def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset=None):
 
     # The splitter is not needed for "pseudo_semantic" chunking.
@@ -91,6 +106,8 @@ def chunk_contexts(contexts, chunking_method, chunk_size, chunk_overlap, dataset
 
 
 # ==========================================================================
+# Add all the chunks that result from chunking to the vector store.
+
 def add_chunks_to_vector_store(chunks, vector_store):
     ids = [str(i) for i in list(range(len(chunks)))]
     for i, chunk in enumerate(chunks):
@@ -100,6 +117,9 @@ def add_chunks_to_vector_store(chunks, vector_store):
 
 
 # ==========================================================================
+# Chunks all the chunks contained in the parameter "squad_contexts". Chunking
+# is carried out for all chunking methods.
+
 def chunk_squad_dataset(squad_contexts, dataset, chunk_size=400, chunk_overlap=50):
 
     print(f"Creating contexts for the dataset...")

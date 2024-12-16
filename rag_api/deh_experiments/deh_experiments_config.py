@@ -18,20 +18,24 @@ BASIC_RAG_LLMAS_JUDGE_PROMPT_IDX = 9
 # Each experiment corresponds to an entry in this dictionary. An alternative to 
 # this approach would be to read in experiments configuration information from 
 # a text-based configuration file. Each experiment defintion is a dictionary itself.
-# It contains the following information:
+# It contains the following entries:
 #
-# name:                     The name of the experiment (serves as an ID)
-# title:                    The title (used for the histograms)
-# sample_ldicts_idx         
+# name:                       The name of the experiment (serves as an ID)
+# title:                      The title (used for the histograms)
+# sample_ldicts_idx           Index into the list of samples; selects the sample to be used for the experiment
+# query_prompt_idx            Index into the list of prompts; selects the prompt to be used for the experiment
+# context_needed              True, if context is needed (i.e. RAG), False else
+# hyde_context_needed         True, if context based on Hyde is needed, False else
+# suppress_answers            True, if LLM-as-judge is to be used; False else
+# judges_suppress_threshold   Value between 0 and 1. answer is thrown away, if its final score falls below
+# chunking_method             One of the following: "naive", "per_context", "per_article", "pseudo_semantic"
+# vector_store_top_k          Number of documents to be retrieved from the vector store in similarity search
+# llm_model                   Choice of LLM model among the available ones (use the name of the LLM)
+# temperature                 Temperature setting for generating answers
 #
-# 
-#
-#
-# 
-#
-#
-# 
+
 experiments = {}
+
 
 # ============================== Pass 1 ==========================================
 
@@ -436,7 +440,6 @@ experiments["P2_F2"] = {
     "temperature": 0.5
 }
 
-
 experiments["P2_F3"] = {
     "name": "P2_F3",
     "title": "P2_F3",
@@ -618,7 +621,7 @@ experiments["P2_F9_00"] = {
     "temperature": 0.0
 }
 
-# =================================================================================================
+# ========================= Final experiments =======================================================
 
 experiments["FINAL_NO_RAG"] = {
     "name": "FINAL_NO_RAG",

@@ -1,9 +1,19 @@
+"""
+
+Contains functionality needed for creating Hyde articles and contexts based
+on these articles. Since this process is very slow, not all Hyde-based
+contexts have been created for the purposes of the experiments.
+
+To create the Hyde-based contexts, the corresponding function is called from
+the command line.
+
+"""
+
+
 # ==========================================================================
 import csv
 import argparse
 import sys
-import os
-# sys.path.append(os.path.abspath("../../../deh/src"))
 from deh_squad_data import load_squad_data
 from deh_llm import get_llm
 from deh_vector_store import get_vector_store
