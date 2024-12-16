@@ -57,6 +57,13 @@
         <div><span class="option">number of contexts:</span><input type="range" name="k" id="k" min="0" max="25" step="1" value="5" oninput="this.nextElementSibling.value = this.value"/><output></output></div>
         <div><span class="option">HYDE enabled:</span><input type="checkbox" name="h" id="h" checked/></div>
         <div><span class="option">AI Evaluation enabled:</span><input type="checkbox" name="e" id="e" checked/></div>
+        <div>
+            <span class="option">Response Length:</span>
+            <select name="lp" id="lp">
+                <option value="0">Short Answer</option>
+                <option value="3">Long Answer</option>
+            </select>
+        </div>
     </div>
     <textarea
         id="query"
@@ -182,6 +189,7 @@ function query() {
     e = $("#e").val() == "on"
     t = $("#t").val()
     k = $("#k").val()
+    lp = $("#lp").val()
 
     // Guard statement:
     if (q == "") {
@@ -194,8 +202,8 @@ function query() {
     $("#query-loading").css("display", "block")
     $("#answer").css("display", "none")
 
-    console.log("h=" + h + ", e=" + e + ", t=" + t +",k=" + k)
-    query_str = '/answer?h='+h+'&e='+e+'&t='+t+'&k='+k +'&q=' + encodeURI(q)
+    console.log("h=" + h + ", e=" + e + ", t=" + t +", k=" + k +", lp="+lp)
+    query_str = '/answer?h='+h+'&e='+e+'&t='+t+'&k='+k+'&lp='+lp+'&q='+ encodeURI(q)
     console.log(query_str)
 
     // Execute Query:
