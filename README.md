@@ -10,7 +10,14 @@ As part of Harvard DCE Data Science Capstone (CSCI E-599a) this provides impleme
 
 ## Developer Setup
 
-Project components are deployed via Docker containers with Docker-Compose orchestration.  High-level development architecture can be viewed [here](docs/docker_architecture.pptx) and additional details on specific Dockerized modules can be viewed [here](docs/docker_containers.md).  Module specific local development instructions can be found in READMEs within sub-project folders (e.g. [measurement](./measurement/), [rag_api](./rag_api/), and [ui](./ui/) respectively).
+Project components are deployed via Docker containers with Docker-Compose orchestration.  High-level development architecture can be viewed [here](docs/docker_architecture.pptx) and additional details on specific Dockerized modules can be viewed [here](docs/docker_containers.md).  
+
+Additional README instructions can be found for:
+
+* Terraform setup instructions for EC2 instance use [README](./terraform/README.md)
+* GitHub Action testing and development environment [README](./.github/README.md)
+
+Module specific local development instructions can be found in READMEs within sub-project folders (e.g. [measurement](./measurement/), [rag_api](./rag_api/), and [ui](./ui/) respectively).
 
 ### IDE (Optional - VS Code)
 
@@ -28,6 +35,10 @@ It is recommended to use [VSCode](https://code.visualstudio.com/) as development
 ### Windows Users (Recommended - WSL)
 
 For Windows-based developers it is recommended that you [install WSL](https://learn.microsoft.com/en-us/windows/wsl/install) to provide a Linux-based (Ubuntu) tool chain environment.  It is possible to do project development directly in Windows environment given the use of Docker, but may pose some dependency conflict challenges.  Additionally majority of configuration examples will be provided assuming a Linux-based CLI.
+
+### AWS Instances
+
+For convenience [Terraform modules](./terraform/) are also provided to create AWS EC2 instances where local GPU-based development capabilites are not available.  VSCode remote plugin can be used with EC2 environment simliar to WSL setup.  Specifics of EC2 environment setup can be found in [initialization template](./terraform/deh_ec2.tftpl).
 
 ### Docker installation
 
@@ -61,6 +72,8 @@ If you have installed Docker Desktop or docker-ce then Docker Compose should alr
 > sudo docker-compose version
 ```
 
+**Note:** Alternatively `docker compose` if you have installed via docker-compose-plugin as illustrated below.
+
 If not available you may want to re-run [latest version installation](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) via:
 
 ```bash
@@ -80,11 +93,13 @@ The [BuildX plugin](https://github.com/docker/buildx) brings additional Build fu
 The DEH environment can be launched via Docker Compose via the following:
 
 ```bash
-./dehallucinator> sudo docker-compose start
+./dehallucinator> docker-compose -f docker-compose.yml build
+./dehallucinator> docker-compose -f docker-compose.yml up
 ```
 
 **Note:** Command run from root directory of the code-base - e.g. the 'dehallucinator' directory that contains the docker-compose.yml file
 **Note:** Cntrl+C can be used to shutdown all running containers in attached mode.  Alternatively `docker-compose down` can be executed.
+**Note:** `docker-compose.yml` is the default GPU enabled configuration.  Other configurations like `docker-compose-cpu.yml` could be chosen if desired.
 
 Upon successful execution of docker-compose command you should see status of component launches and output of container logs:
 
@@ -149,6 +164,12 @@ Build `deh_measurement` image from Dockerfile:
 > docker build -t deh_measurement:latest ./measurement
 ```
 
+For convenience this can be done via shell script as:
+
+```bash
+> ./measurement/utils/build_container.sh
+```
+
 **Note:** Command should be executed from project root directory (e.g. dehallucinator).  Image build is only required to do one-time.
 
 Execute download utility:
@@ -182,7 +203,7 @@ Change directory to measure folder:
 Create and activate a Python virtual environment:
 
 ```bash
-> conda create -y --name=deh_measure_ python=3.9
+> conda create -y --name=deh_measure_ python=3.10
 > conda activate deh_measure
 ```
 
@@ -200,29 +221,41 @@ Run SQUAD download utility (command line arguments can be included if desired bu
 
 ## Evaluating RAG Performance
 
-Similar to QA dataset download, evaluation of RAG performance can be done via a containerized utility.
+It is recommended that evaluation is done via [experiment Notebooks](./measurement/notebooks/) an example can be found [here](./measurement/notebooks/https://teams.microsoft.com/l/team/19%3A47f54120aa544f969bcf0c06f3932e25%40thread.tacv2/conversations?groupId=008b28c9-f221-4238-9411-dafd98a51c40&tenantId=3596192b-fdf5-4e2c-a6fa-acb706c963d8).
 
-Build `deh_measurement` image from Dockerfile:
+Top of experiment Notebook often provides parameters that can be adjusted.  Noteably `num_samples` selects the number of Question-Answers to run experiment on and `experiment_folder` provides the folder for storing and loading experiment results.
 
-```bash
-> ./measurement/utils/build_container.sh
+```python
+num_samples:int = 100
+experiment_folder:str = "../../data/evaluation/hyde-prompt-experiment/"
 ```
 
-**Note:** Command should be executed from project root directory (e.g. dehallucinator).  Image build is only required to do one-time.
+An example of an implemented experiment can be seen below.  The `generate_experiment_dataset` function takes a QA dataset and iterates over it calling the provided `api_endpiont` to get a JSON response from one of our deployed [APIs](./rag_api/).  The JSON is then converted to a Pandas DataFrame via the `convert` function.
 
-Execute evaluation utility:
+It is then highly recommended that experiments save experiment results (since may involve LLM responses that take a long time to generate).  This allows others to load results from experiment for downstream analysis without having to re-run full experiment.
 
-```bash
-> ./measurement/utils/evaluate_rag.sh
+```python
+def convert(response) -> pd.DataFrame:
+    """Converts retrieved JSON response to Pandas DataFrame."""
+    return pd.json_normalize(
+        data=response["response"], record_path="context", meta=["question", "execution_time"]
+    )
+
+def api_endpoint(**kwargs) -> str:
+    """Calls the context_retrieval API endpoint with no additional parameters (so default behavior)."""
+    query_params = "&".join([f"{key}={kwargs[key]}" for key in kwargs])
+    return f"http://{settings.API_ANSWER_ENDPOINT}/context_retrieval?{query_params}"
+
+# Execute experiment
+exp_df = generate_experiment_dataset(qa_set, convert, api_endpoint)
+
+# Store resulting pandas Dataframe from experiment for later use.
+exp_df.to_pickle( f"{experiment_folder}/experiment_file_name.pkl" )
 ```
 
-**Note:** Command should be executed from project root directory (e.g. dehallucinator).
+## QA DataSet
 
-Result of utility should be creation of `evaluation` folder in `data` with a time-stamp named file:
-
-![evaluation folder](/docs/images/evaluation-folder.png)
-
-An evaluation file should have a CSV structure simliar to the below.
+An evaluation result file should have a CSV structure simliar to the below.
 
 *QA elements:*
 
@@ -233,7 +266,11 @@ An evaluation file should have a CSV structure simliar to the below.
 
 *Evaluation metrics:*
 
+Different experiments may produce different output metrics.  Examples of some common ones include:
+
 * answer_similiarity - the cosine similarity of answer and ground truth embeddings
+* F1 score - the harmonic mean of precision and recall measurement
+* response_time - the time for API to return response
 
 *RAG and Assessment Hyper-Parameter elements:*
 
@@ -243,6 +280,18 @@ An evaluation file should have a CSV structure simliar to the below.
 * docs_loaded - number of context docs loaded into Vector Store
 * assessment_llm - LLM model used in assessment for LLM-as-judge measurement
 * assessment_embedding - Embedding model used in assessment for embedding comparison
+
+*Many hyper-parameters can be directly controlled via API endpoint:*
+
+* t - temperature of the LLM model
+* e - true/false if evaluation functionality will be enabled
+* h - true/false if HYDE context query expansion will be enabled
+* m - model name to use for LLM
+* k - number of contexts to retrieve
+
+An example url could be: <server_ip>/answer?q=<user_query>&t=0.5&e=false&h=false&k=5.
+
+API code can be reviewed to view all parameters and associated defaults, etc.
 
 ## Developer Best Practices
 

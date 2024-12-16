@@ -28,12 +28,43 @@
         background-color: #6d2976 !important;
         outline-color: #6d2976 !important;
     }
+    .option {
+        display: inline-block;
+        width: 200px;
+    }
+    .setting_lbl {
+        display: inline-block;
+        width: 300px;
+    }
+    output {
+        padding-left: 5px;
+        color: blue;
+        font-size: small;
+    }
+    .diagnostic_header {
+        background-color: lightgray; 
+        padding-left:4px; 
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <!-- Page Content -->
 <div class="question-block borders" style="text-align:right;">
+    <div style="color:white; text-align:right; padding-bottom:5px;">Advanced Options <img src="/static/imgs/up-chevron.png" onclick="toggle_options(this)"/></div>
+    <div id="advanced_options" style="color: white;text-align:left;padding-bottom:5px; display:none;">
+        <div><span class="option">temperature:</span><input type="range" name="t" id="t" min="0" max="1" step="0.25" value="0.5" oninput="this.nextElementSibling.value = this.value"/><output></output></div>
+        <div><span class="option">number of contexts:</span><input type="range" name="k" id="k" min="0" max="25" step="1" value="5" oninput="this.nextElementSibling.value = this.value"/><output></output></div>
+        <div><span class="option">HYDE enabled:</span><input type="checkbox" name="h" id="h" checked/></div>
+        <div><span class="option">AI Evaluation enabled:</span><input type="checkbox" name="e" id="e" checked/></div>
+        <div>
+            <span class="option">Response Length:</span>
+            <select name="lp" id="lp">
+                <option value="0">Short Answer</option>
+                <option value="3">Long Answer</option>
+            </select>
+        </div>
+    </div>
     <textarea
         id="query"
         placeholder="How can I help you?"
@@ -91,8 +122,44 @@
         <div style="float:right; width:80%; text-align: left;";>Assessing Hallucinations...</div>
     </div>
     <div id="diagnostics">
-        <div id ="context-bar-chart"></div>
-        <div id="context-details"></div>
+
+        <!--AI Evaluation Diagnostics-->
+        <div id="ai_evaluation_diagnostics" style="padding-bottom: 15px;">
+            <div class="diagnostic_header">AI Evaluation Results</div>
+
+            <div class="container">
+                <div class="row">
+                    <div class="col-3">
+                        <img src="/static/imgs/ai_eval_robot.png" width=90 alt="AIEval"/>
+                    </div>
+                    <div class="col-9">
+                        AI based evaluation believes that the above answer is: <span id="ai_evaluation_result" style="font-weight:bold; font: small-caps">UNKNOWN</span>.
+                        </br>
+                        <br/>
+                        <div id="ai_evaluation_rationale">Reason why correct.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!--Context Exploration-->
+        <div id="context_diagnostics" style="padding-bottom: 15px;">
+            <div class="diagnostic_header">Relevant Context</div>
+            Explore contexts that are associated with the generated answer.  Click on each context bar to get more information.
+            <div id ="context-bar-chart"></div>
+            <div id="context-details" style="font-size:small"></div>
+        </div>
+
+        <!--System Settings-->
+        <div id="system_diagnostics" style="padding-bottom: 15px;">
+            <div class="diagnostic_header">System Settings</div>
+            <span class="setting_lbl">Response Speed:</span><span class="system_setting" id ="setting_response_speed">N/A</span><br/>
+            <span class="setting_lbl">LLM Temperature:</span><span class="system_setting" id ="setting_temperature">N/A</span><br/> 
+            <span class="setting_lbl">LLM Model:</span><span class="system_setting" id ="setting_model_name">N/A</span><br/>
+            <span class="setting_lbl">Context Repository Size:</span><span class="system_setting" id ="setting_docs_cnt">N/A</span><br/>
+        </div>
+        
+
     </div>
 </div>
 
@@ -115,12 +182,32 @@ axios.defaults.baseURL = '/api/';
 // API functional call:
 var response_cache;
 function query() {
+    
+    // Query Parameters:
+    q = $("#query").val()
+    h = $("#h").val() == "on"
+    e = $("#e").val() == "on"
+    t = $("#t").val()
+    k = $("#k").val()
+    lp = $("#lp").val()
+
+    // Guard statement:
+    if (q == "") {
+        alert ("Please provide a query.")
+        return
+    }
+    
     // Display Query Response block (with loading indicator)
     $("#query-response").css("display", "block")
     $("#query-loading").css("display", "block")
     $("#answer").css("display", "none")
-    
-    axios.get('/answer?h=false&e=true&q=' + encodeURI($("#query").val()))
+
+    console.log("h=" + h + ", e=" + e + ", t=" + t +", k=" + k +", lp="+lp)
+    query_str = '/answer?h='+h+'&e='+e+'&t='+t+'&k='+k+'&lp='+lp+'&q='+ encodeURI(q)
+    console.log(query_str)
+
+    // Execute Query:
+    axios.get(query_str)
         .then(function (response) {
             var json_response = response.data;
             console.log(json_response);
@@ -136,13 +223,13 @@ function query() {
         });
 }
 
-function display_loading_diagnostics(json_reponse) {
+function display_loading_diagnostics(json_response) {
     // Display Diagnostics block (with loading indicator)
     $("#diagnostic-response").css("display", "block")
     $("#diagnostics-loading").css("display", "block")
     $("#diagnostics").css("display", "none")
 
-    setTimeout( function() { display_diagnostics(json_reponse) }, 3000 )
+    setTimeout( function() { display_diagnostics(json_response) }, 3000 )
 }
 
 function display_diagnostics(json_response) {
@@ -150,8 +237,25 @@ function display_diagnostics(json_response) {
     $("#diagnostics").css("display", "block")
     
     create_context_score_chart( "#context-bar-chart", json_response)
-    //context.innerHTML = answer_text.response.context.replaceAll('------------', "<br/><br/>")
-    //evaluation.innerHTML = answer_text.response.evaluation.grade + "<br/><br/> " + answer_text.response.evaluation.description
+
+    // AI Evaluation Diagnostics
+    evaluation_on = $("#e").val() == "on"
+    if (evaluation_on ) {
+        $("#ai_evaluation_diagnostics").css("display", "block")
+        evaluation_result = json_response.response.evaluation.grade.toUpperCase()
+        evaluation_rationale = json_response.response.evaluation.description
+        $("#ai_evaluation_result").html(evaluation_result)
+        $("#ai_evaluation_rationale").html(evaluation_rationale)
+    } else {
+        $("#ai_evaluation_diagnostics").css("display", "none")
+    }
+
+    // System Setting Diagnostics
+    $("#setting_response_speed").html(json_response.response.response_time)
+    $("#setting_temperature").html(json_response.response.temperature)
+    $("#setting_model_name").html(json_response.response.model_name)
+    $("#setting_docs_cnt").html(json_response.system_settings.docs_loaded)
+
 }
 
 </script>

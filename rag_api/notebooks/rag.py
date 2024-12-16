@@ -11,6 +11,7 @@ loaded_model = None
 loaded_data_folder = None
 query_engine = None
 
+
 # Function to load documents and set up the model
 def setup_rag(data_folder, model_name):
     global loaded_model, loaded_data_folder, query_engine

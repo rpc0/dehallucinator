@@ -112,3 +112,17 @@ function create_donut_chart() {
   });
 
 }
+
+function toggle_options(el) {
+  chevron = el.src
+  opt_div = document.getElementById("advanced_options")
+
+  if (chevron.includes("up") ) {
+    el.src = el.src.replace("up", "down")
+    opt_div.style.display="block"
+  } else {
+    el.src = el.src.replace("down", "up")
+    opt_div.style.display="none"
+  }
+
+}

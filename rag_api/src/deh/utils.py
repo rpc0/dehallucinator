@@ -14,7 +14,7 @@ def format_context_documents(inputs):
     return "\n\n ------------".join(doc.page_content for doc in inputs["context"])
 
 
-def retriever_with_scores(vector_store):
+def retriever_with_scores(vector_store, k=settings.CONTEXT_DOCUMENTS_RETRIEVED):
     """Retrieve documents from vectorstore with similarity score."""
 
     @chain
@@ -22,7 +22,7 @@ def retriever_with_scores(vector_store):
         # https://python.langchain.com/docs/how_to/add_scores_retriever/
 
         search_results = vector_store.similarity_search_with_score(
-            inputs["question"], k=settings.CONTEXT_DOCUMENTS_RETRIEVED
+            inputs["question"], k=k
         )
 
         # GUARD-STATEMENT: No results

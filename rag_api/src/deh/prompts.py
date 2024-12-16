@@ -34,6 +34,17 @@ rag_text_prompts = [
 
     Answer:
     """,
+    """
+    You are an assistant for question-answering tasks.
+    Use the following pieces of retrieved context to answer the question.
+    If you don't know the answer, just say that you don't know.
+    Answer the question thoroughly and completely.
+
+    Question: {question}
+    Context: {context}
+
+    Answer:
+    """,
 ]
 
 qa_eval_prompt_with_context_text = """
