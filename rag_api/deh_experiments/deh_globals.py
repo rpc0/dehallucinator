@@ -43,7 +43,7 @@ REFRESH_HYDE_CONTEXTS = False       # Set to True to create Hyde-based contexts;
 RESTORE_QAS_WITH_CONTEXTS = False
 
 # Bootstrap Parameters
-SAMPLE_SIZE = 100                   # number of questions to be selected from the SQuAD dataset for an experiment
+SAMPLE_SIZE = 200                   # number of questions to be selected from the SQuAD dataset for an experiment
 BOOTSTRAPS_N = 10000                # number of bootstraps
 
 # Timing parameter; will contain execution time related info
