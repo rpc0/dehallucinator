@@ -185,8 +185,8 @@ function query() {
     
     // Query Parameters:
     q = $("#query").val()
-    h = $("#h").val() == "on"
-    e = $("#e").val() == "on"
+    h = $("#h").is(":checked")
+    e = $("#e").is(":checked")
     t = $("#t").val()
     k = $("#k").val()
     lp = $("#lp").val()
@@ -239,7 +239,7 @@ function display_diagnostics(json_response) {
     create_context_score_chart( "#context-bar-chart", json_response)
 
     // AI Evaluation Diagnostics
-    evaluation_on = $("#e").val() == "on"
+    evaluation_on = $("#e").is(":checked")
     if (evaluation_on ) {
         $("#ai_evaluation_diagnostics").css("display", "block")
         evaluation_result = json_response.response.evaluation.grade.toUpperCase()
