@@ -47,13 +47,13 @@ Depending on specific operating system installation of Docker may require differ
 Once Docker is installed you should see Docker icon in taskbar (if using Desktop) or be able to successfully run commands like:
 
 ```bash
-> sudo docker ps
+sudo docker ps
 ```
 
 As well as run test containers:
 
 ```bash
-> sudo docker run hello-world
+sudo docker run hello-world
 ```
 
 #### Enabling NVIDIA GPU Support for Docker
@@ -69,7 +69,7 @@ If developer is unable to enable GPU support, Ollama docker-compose configuratio
 If you have installed Docker Desktop or docker-ce then Docker Compose should already be included in installation.  You can confirm via:
 
 ```bash
-> sudo docker-compose version
+sudo docker-compose version
 ```
 
 **Note:** Alternatively `docker compose` if you have installed via docker-compose-plugin as illustrated below.
@@ -77,7 +77,7 @@ If you have installed Docker Desktop or docker-ce then Docker Compose should alr
 If not available you may want to re-run [latest version installation](https://docs.docker.com/engine/install/ubuntu/#install-using-the-repository) via:
 
 ```bash
->  sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 ```
 
 #### BuildX Plugin
@@ -85,7 +85,7 @@ If not available you may want to re-run [latest version installation](https://do
 The [BuildX plugin](https://github.com/docker/buildx) brings additional Build functionality to the `docker build` command and is required for project Docker builds.  Plugin can be installed via below if not already installed:
 
 ```bash
->  sudo apt-get install docker-buildx-plugin
+sudo apt-get install docker-buildx-plugin
 ```
 
 ## DEH Environment Launch via Docker Compose
@@ -93,8 +93,8 @@ The [BuildX plugin](https://github.com/docker/buildx) brings additional Build fu
 The DEH environment can be launched via Docker Compose via the following:
 
 ```bash
-./dehallucinator> docker-compose -f docker-compose.yml build
-./dehallucinator> docker-compose -f docker-compose.yml up
+docker-compose -f docker-compose.yml build
+docker-compose -f docker-compose.yml up
 ```
 
 **Note:** Command run from root directory of the code-base - e.g. the 'dehallucinator' directory that contains the docker-compose.yml file
@@ -110,38 +110,38 @@ Upon successful execution of docker-compose command you should see status of com
 Connect to a specific Docker container:
 
 ```bash
-> sudo docker exec -it [container_name] bash
+sudo docker exec -it [container_name] bash
 ```
 
 View current containers:
 
 ```bash
-> sudo docker ps -a
+sudo docker ps -a
 ```
 
 Stop and start a specific service:
 
 ```bash
-> sudo docker-compose stop [service name]
-> sudo docker-compose start [service name]
+sudo docker-compose stop [service name]
+sudo docker-compose start [service name]
 ```
 
 Launch containers "detached" so that they run in background:
 
 ```bash
-> sudo docker-compose up -d
+sudo docker-compose up -d
 ```
 
 Stream specific docker container logs:
 
 ```bash
-> sudo docker logs --follow [container name]
+sudo docker logs --follow [container name]
 ```
 
 View docker container resource utilization:
 
 ```bash
-> sudo docker stats
+sudo docker stats
 ```
 
 ## Download QA Data Corpus
@@ -161,13 +161,13 @@ A Docker container has been provided for convenience to enable SQuAD data downlo
 Build `deh_measurement` image from Dockerfile:
 
 ```bash
-> docker build -t deh_measurement:latest ./measurement
+docker build -t deh_measurement:latest ./measurement
 ```
 
 For convenience this can be done via shell script as:
 
 ```bash
-> ./measurement/utils/build_container.sh
+./measurement/utils/build_container.sh
 ```
 
 **Note:** Command should be executed from project root directory (e.g. dehallucinator).  Image build is only required to do one-time.
@@ -175,7 +175,7 @@ For convenience this can be done via shell script as:
 Execute download utility:
 
 ```bash
-> ./measurement/utils/download_squad_data.sh
+./measurement/utils/download_squad_data.sh
 ```
 
 **Note:** Command should be executed from project root directory (e.g. dehallucinator).
@@ -197,26 +197,26 @@ Alternatively you can execute Python utility within local development environmen
 Change directory to measure folder:
 
 ```bash
-> cd measurement
+cd measurement
 ```
 
 Create and activate a Python virtual environment:
 
 ```bash
-> conda create -y --name=deh_measure_ python=3.10
-> conda activate deh_measure
+conda create -y --name=deh_measure_ python=3.10
+conda activate deh_measure
 ```
 
 Install deh_measure packages:
 
 ```bash
-> pip install -e .
+pip install -e .
 ```
 
 Run SQUAD download utility (command line arguments can be included if desired but default to project compatible values):
 
 ```bash
-> python squad_da_dl.py
+python squad_qa_dl.py
 ```
 
 ## Evaluating RAG Performance
@@ -307,21 +307,21 @@ Git functionality is available natively within VS Code (and other IDEs) so that 
 A new branch can be created via:
 
 ```bash
-> git branch [new_branch_name]
-> git checkout [new_branch_name]
+git branch [new_branch_name]
+git checkout [new_branch_name]
 ```
 
 Branches can be pushed to origin (i.e. github) via:
 
 ```bash
-> git push -u origin [branch_name]
+git push -u origin [branch_name]
 ```
 
 After branch commits and PR merge to main:
 
 ```bash
-> git checkout main
-> git pull
+git checkout main
+git pull
 ```
 
 Now you are ready to create a new branch and repeat!
