@@ -15,7 +15,7 @@ probability that a question is unanswerable.
 
 The script expects a .csv file with the predicted answers that contains at least two columns,
 one of them named "question" that contains the questions in string format (i.e. not the qid's)
-and the other one name "answer" that contains the predicted answer for each corresponding question.
+and the other one named "answer" that contains the predicted answer for each corresponding question.
 
 The script also expects a .json file that contains the dataset (e.g. dev-v2.0.json) that corresponds
 to the format of the dev dataset found on https://rajpurkar.github.io/SQuAD-explorer/.
@@ -82,7 +82,7 @@ import sys
 import matplotlib
 import matplotlib.pyplot as plt
 
-from csv import DictReader # , writer
+from csv import DictReader
 
 
 # =================================================================================================
@@ -106,6 +106,8 @@ OPTS = Options()
 def parse_args():
     """
     Reads in command line arguments for further processing.
+
+    #TODO: change "pred.json" to "pred.csv", since we're reading in a csv and not a json
     """
 
     parser = argparse.ArgumentParser('Adapted evaluation script for SQuAD version 2.0.')
@@ -141,8 +143,8 @@ def parse_args():
 # =================================================================================================
 def make_qid_to_has_ans(dataset):
     """
-    Returns a dictionary, with for each question (identified by its id) a bool that indicates whether 
-    or not the question has an answer.
+    Returns a dictionary, with for each question (identified by its id) a bool that indicates whether
+    or not the question has an answer (i.e. is answerable from the text Wikipedia text segment).
 
     Args:
       dataset (list): list of articles (each one containing paragraphs, each paragraph containing questions and
@@ -156,7 +158,9 @@ def make_qid_to_has_ans(dataset):
     for article in dataset:
         for p in article['paragraphs']:
             for qa in p['qas']:
-                qid_to_has_ans[qa['id']] = bool(qa['answers'])
+                qid_to_has_ans[qa['id']] = bool(qa['answers']) # if is_impossible is True, then the list of
+                                                               # answers is empty (their is a "plausible_answers"
+                                                               # list in such cases)
 
     return qid_to_has_ans
 
@@ -177,7 +181,7 @@ def normalize_answer(s):
     """
 
     def remove_articles(text):
-        regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)
+        regex = re.compile(r'\b(a|an|the)\b', re.UNICODE)   # remove a, an, the
         return re.sub(regex, ' ', text)
 
     def white_space_fix(text):
@@ -185,10 +189,11 @@ def normalize_answer(s):
 
     def remove_punc(text):
         exclude = set(string.punctuation)
-        return ''.join(ch for ch in text if ch not in exclude)
+        return ''.join(ch for ch in text if ch not in exclude)  # remove puncutation
 
     def lower(text):
         return text.lower()
+    
     return white_space_fix(remove_articles(remove_punc(lower(s))))
 
 
@@ -200,6 +205,7 @@ def get_tokens(s):
 
     if not s:
         return []
+    
     return normalize_answer(s).split()
 
 
@@ -215,7 +221,7 @@ def compute_exact(a_gold, a_pred):
 
     Returns:
 
-      int: 1 if both are equal, 0 else
+      int: 1 if both normalized answers are equal, 0 else
     """
 
     return int(normalize_answer(a_gold) == normalize_answer(a_pred))
@@ -227,29 +233,27 @@ def compute_f1(a_gold, a_pred):
     Computes the f1 score, based on the gold answer and the predicted answer. The computation uses
     precision and recall. It also computes the Jaccard similarity.
     
-    Here is an explanation of all terms:
+    Here is an explanation of all terms (all explanations assume normalized answer strings):
 
     Precision measures the proportion of correctly predicted tokens (or words) from the total tokens
     predicted as part of the answer. In other words:
 
-    Precision = (number of correctly predicted tokens) / (number of total tokens predicted)
+        Precision = (number of correctly predicted tokens) / (number of total tokens predicted)
 
     Recall measures the proportion of correctly predicted tokens (or words) out of the total tokens
     that are part of the gold answer. In other words:
 
-    Recall = (number of correctly predicted tokens) / (number of total tokens in the gold answer)
+        Recall = (number of correctly predicted tokens) / (number of total tokens in the gold answer)
 
     The Jaccard similarity score is a measure of the similarity between the gold answer and the predicted
     answer. It is calculated as follows:
 
-    Jaccard = (number of correctly predicted tokens) / 
+        Jaccard = (number of correctly predicted tokens) / 
               (number of total tokens in the gold answer + number of total tokens in the predicted answer)
 
     The F1 score is the harmonic mean of precision and recall. It is calculated as follows:
 
-    F1 = (2 * precision * recall) / (precision + recall)
-
-    The function 
+        F1 = (2 * precision * recall) / (precision + recall)
 
     Args:
 
@@ -260,10 +264,10 @@ def compute_f1(a_gold, a_pred):
 
         dicionary (float, float, float):
             - precision: the precision score
-            - recall: the recall score
-            - jaccard: the jaccard similarity score
-            - f1 score: the formula is (2 * precision * recall) / (precision + recall))
-                        (the harmonic mean of precision and recall)
+            - recall:    the recall score
+            - jaccard:   the jaccard similarity score
+            - f1 score:  the formula is (2 * precision * recall) / (precision + recall))
+                         (the harmonic mean of precision and recall)
 
     """
 
@@ -279,12 +283,14 @@ def compute_f1(a_gold, a_pred):
     # of correctly predicted tokens.
     common = collections.Counter(gold_toks) & collections.Counter(pred_toks)
     union_toks = collections.Counter(gold_toks) | collections.Counter(pred_toks)
+
     correctly_predicted_tokens_cnt = sum(common.values())
     union_toks_cnt = sum(union_toks.values())
 
     if len(gold_toks) == 0 or len(pred_toks) == 0:
-        # If either is no-answer, then F1 is 1 if they agree, 0 otherwise
+        # If either is no-answer, then F1=1 if they agree, 0 otherwise
         agree = (gold_toks == pred_toks)
+        #TODO: would be better to return float here...
         return {"precision": int(agree), "recall": int(agree), "jaccard": int(agree), "f1": int(agree)}
     if correctly_predicted_tokens_cnt == 0:
         return {"precision": 0.0, "recall": 0.0, "jaccard": 0.0, "f1": 0.0}
@@ -306,17 +312,18 @@ def get_raw_scores(dataset, preds):
 
     Args:
 
-      dataset (list): list of articles (each one containing paragraphs, each paragraph containing questions and answers)
-      preds (dictionary): the predictions to be evaluated; dictionary contains one entry per question id with either an answer 
-                          if one is predicted, or an empty string
+      dataset (list):     list of articles (each one containing paragraphs, each paragraph containing questions and
+                          answers)
+      preds (dictionary): the predictions to be evaluated; dictionary contains one entry per question id with either an
+                          answer if one is predicted, or an empty string for no answer
 
     Returns:
 
-      exact_scores (dictionary): for each question, the exact score (either 0 or 1)
+      exact_scores (dictionary):     for each question, the exact score (either 0 or 1)
       precision_scores (dictionary): for each question, the precision score (a value between 0 and 1)
-      recall_scores (dictionary): for each question, the recall score (a value between 0 and 1)   
-      jaccard_scores (dictionary): for each question, the Jaccard similarity score (a value between 0 and 1)   
-      f1_scores (dictionary): for each question, the f1 score (a value between 0 and 1)
+      recall_scores (dictionary):    for each question, the recall score (a value between 0 and 1)   
+      jaccard_scores (dictionary):   for each question, the Jaccard similarity score (a value between 0 and 1)   
+      f1_scores (dictionary):        for each question, the f1 score (a value between 0 and 1)
 
     """
 
@@ -336,11 +343,11 @@ def get_raw_scores(dataset, preds):
                 gold_answers = [a['text'] for a in qa['answers'] if normalize_answer(a['text'])] 
 
                 if not gold_answers:
-                    # For unanswerable questions, only correct answer is empty string
+                    # for unanswerable questions, the only correct answer is the empty string
                     gold_answers = ['']
 
                 # If there is no prediction in the predictions dict for the current question
-                # print a message
+                # print a message (in verbose mode)
                 if qid not in preds:
                     if OPTS.verbose:
                         print('Missing prediction for %s' % qid)
@@ -353,7 +360,7 @@ def get_raw_scores(dataset, preds):
                 exact_scores[qid] = max(compute_exact(a, a_pred) for a in gold_answers)
 
                 # Get precision, recall and f1 scores for the current question
-                # TODO: refactor, since for loop is executed three times!
+                # TODO: refactor, since same code is executed four times!
                 precision_scores[qid] = max(compute_f1(a, a_pred)["precision"] for a in gold_answers)
                 recall_scores[qid] = max(compute_f1(a, a_pred)["recall"] for a in gold_answers)
                 jaccard_scores[qid] = max(compute_f1(a, a_pred)["jaccard"] for a in gold_answers)
@@ -379,7 +386,8 @@ def apply_no_ans_threshold(scores, na_probs, qid_to_has_ans, na_prob_thresh):
       na_probs (dictionary):        no answer probability for each question (id) (generated by the model)
       qid_to_has_ans (dictionary):  per question (id), contains True if answerable, False if not
       na_prob_threshold (float):    threshold above which a no answer probability is interpreted 
-                                    as a prediction of no answer
+                                    as a prediction of no answer. If na_prob_thresh == 1, then scores are
+                                    kept as is.
 
     Returns:
 
@@ -406,7 +414,8 @@ def make_eval_dict(exact_scores, precision_scores, recall_scores, jaccard_scores
     """
     Constructs the dictionary that holds the EM, precision, recall, Jaccard similarity and F1 scores for the
     complete predictions data set.
-    # TODO: change example to include precision and recall scores as well
+
+    # TODO: change following example to include precision, recall and jaccard scores as well
     example output of the function: OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873})
 
     Args:
@@ -472,7 +481,8 @@ def merge_eval(main_eval, new_eval, prefix):
 # =================================================================================================
 def plot_pr_curve(precisions, recalls, out_image, title):
     """
-    #TODO --> comment this function
+    This function is currently not used in our project.
+    #TODO --> comment this function and check if it is useful
     """
 
     plt.step(recalls, precisions, color='b', alpha=0.2, where='post')
@@ -489,7 +499,8 @@ def plot_pr_curve(precisions, recalls, out_image, title):
 # =================================================================================================
 def make_precision_recall_eval(scores, na_probs, num_true_pos, qid_to_has_ans, out_image=None, title=None):
     """
-    #TODO --> comment this function
+    This function is currently not used in our project.
+    #TODO --> comment this function and check if it is useful
     """
 
     qid_list = sorted(na_probs, key=lambda k: na_probs[k])
@@ -518,7 +529,8 @@ def make_precision_recall_eval(scores, na_probs, num_true_pos, qid_to_has_ans, o
 def run_precision_recall_analysis(main_eval, exact_raw, f1_raw, na_probs, 
                                   qid_to_has_ans, out_image_dir):
     """
-    #TODO --> comment this function
+    This function is currently not used in our project.
+    #TODO --> comment this function and check if it is useful
     """
 
     if out_image_dir and not os.path.exists(out_image_dir):
@@ -583,7 +595,7 @@ def find_best_thresh(preds, scores, na_probs, qid_to_has_ans):
     """
     This function finds the best threshold for the no answer probabilities. It works as follows:
       
-        - get number of questions without ananswer
+        - get number of questions without an answer
         - initialize current score, best score and best threshold
         - get a list of question ids, sorted in ascending order by their probabilities for no answer
         - for each question, update the current score with the difference between the raw score and the
@@ -669,27 +681,29 @@ def find_all_best_thresh(main_eval, preds, exact_raw, f1_raw, na_probs, qid_to_h
 # =================================================================================================
 def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     """
-    This is the main function of this module. It calculates the EM and F1 scores for
+    This is the main function of this module. It calculates the EM, F1, precision, recall and jaccard scores for:
+
       - all questions in preds
-      - all questions in preds that have answers
-      - all questions in preds that don't have answers
+      - all questions in preds that have answers (i.e. are answerable)
+      - all questions in preds that don't have answers (i.e. are not answerable)
 
     It also generates additional statistics and plots precision-recall curves if an additional
-    na_prob.json file is provided or if no answer probabilities are simulated (plots arestored in 
-    "OPTS.image_dir"). This file is expected to map qid's to the model's predicted probability 
-    that a question is unanswerable.
+    "na_prob.json" file has been provided on the command line or if no answer probabilities
+    are simulated in the absence of this file (plots are stored in "OPTS.image_dir"). 
+    The "na_prob.json" file is expected to contain mappings from qid's to the model's
+    predicted probability that the corresponding question is unanswerable.
 
     Args:
 
-      dataset (list):        list of articles; each entry contains data for one single article 
+      dataset (list):       list of articles; each entry contains data for one single article 
                             (e.g. Harvard university), including title, contexts and qas
                             (typically, read from a json file, such "dev-v2.0.json" file)
 
       preds (dictionary):    dictionary that holds predicitons to be evaluated, one answer
-                            per question (id)
+                             per question (id)
 
       na_probs (dictionary): per question (id), the probability that the question is unanswerable
-                            (such as assessed by the model that did the predictions)
+                             (such as assessed by the model that did the predictions)
 
     Returns:
 
@@ -699,7 +713,7 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
                             answers
 
     Example output:
-    # TODO: update example output to include Jaccard scores
+    # TODO: update example output to also include Jaccard similarity scores
 
     OrderedDict({'exact': 64.81091552261434, 'f1': 67.60971132981268, 'total': 11873,
     'HasAns_exact': 59.159919028340084, 'HasAns_f1': 64.76553687902599, 'HasAns_total': 5928,
@@ -709,7 +723,7 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     # Set global variable OPTS.verbose
     OPTS.verbose = verbose
 
-    # overwrite na_probs with 0.0 values, if not provided...
+    # overwrite na_probs with 0.0 values, if the na_probs has not been provided...
     if not na_probs:
         na_probs = {k: 0.0 for k in preds}
 
@@ -733,8 +747,8 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
     # "raw" means no threshold yet applied
     exact_raw, precision_raw, recall_raw, jaccard_raw, f1_raw = get_raw_scores(dataset, preds)
 
-    # Update exact and f1 scores based on threshold (#TODO: describe exactly how)
-    # exact_thresh and f1_thresh are also dictionaries with the question id's as 
+    # Update exact and f1 scores based on threshold
+    # exact_thresh and f1_thresh are also dictionaries with the question id's as
     # keys and the scores as values
     exact_thresh = apply_no_ans_threshold(exact_raw, na_probs, qid_to_has_ans, 1.0)
     precision_thresh = apply_no_ans_threshold(precision_raw, na_probs, qid_to_has_ans, 1.0)
@@ -764,7 +778,7 @@ def calc_squad_metrics(dataset, preds, na_probs=None, verbose=False):
   
     # Construct the dictionary using only the questions that have *no* answers
     # Then also merge this into the out_eval dictionary. out_eval now contains
-    # the complete info, for example:
+    # the complete info on scores
     no_ans_intersection_qids = list(set(has_pred_qids) & set(no_ans_qids))
     if no_ans_intersection_qids:
         if OPTS.verbose:
@@ -885,7 +899,7 @@ def load_preds(preds_file):
     """
     Loads the predictions file from the file specified in "preds_file" and returns a dictionary. This
     function expects a .csv file that contains at least two columns, one of them named "question" that
-    contains the questions in string format (i.e. not the qid's) and the other one name "answer" that
+    contains the questions in string format (i.e. not the qid's) and the other one named "answer" that
     contains the predicted answer for each corresponding question.
 
     Args:
@@ -911,6 +925,7 @@ def load_preds(preds_file):
         print(f"Error: the predictions file '{preds_file}' could not be found...")
         exit(1)
     except json.JSONDecodeError:
+        #TODO: check if this is correct, since it is about json
         print(f"Error: the predictions file '{preds_file}' could not be read, since it is not a valid CSV file...")
         exit(1)
     except Exception as e:
@@ -929,7 +944,7 @@ def simulate_na_probs(preds):
     """
     Simulates no answer probabilities for the questions in the preds dictionary. The probabilities
     are generated by sampling from a normal distribution with mean 0.15 for questions that have an
-    answer and mean 0.85 for questions that do not have an answer. The standard deviation is 0.1. 
+    answer and mean 0.85 for questions that do not have an answer. The standard deviation is 0.1.
     The probabilities are of course clipped to the range [0.0, 1.0].
 
     Args:
